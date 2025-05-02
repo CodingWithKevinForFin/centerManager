@@ -587,12 +587,12 @@ public class AmiCenterManagerTriggerScirptTreePortlet extends GridPortlet implem
 			if (this.editedFields.size() == 1 && this.editedFields.contains(this.nameField) && this.editedScripts.isEmpty() && this.editedSelectFields.isEmpty()
 					&& this.editedSelectFields.isEmpty()) {
 				query = "RENAME TRIGGER " + this.fieldCache.get(AmiCenterEntityConsts.OPTION_NAME_TRIGGER_NAME) + " TO " + this.nameField.getValue();
-				getManager().showDialog("Submit Trigger", new AmiCenterManagerSubmitTriggerPortlet(this.service, generateConfig(), query),
-						AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_HEIGHT);
+				getManager().showDialog("Submit Trigger", new AmiCenterManagerSubmitEditScriptPortlet(this.service, generateConfig(), query),
+						AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
 			} else {
 				query = "DROP TRIGGER " + this.fieldCache.get(AmiCenterEntityConsts.OPTION_NAME_TRIGGER_NAME) + ";" + previewScript();
-				getManager().showDialog("Submit Trigger", new AmiCenterManagerSubmitTriggerPortlet(this.service, generateConfig(), query),
-						AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_HEIGHT);
+				getManager().showDialog("Submit Trigger", new AmiCenterManagerSubmitEditScriptPortlet(this.service, generateConfig(), query),
+						AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
 			}
 		} else if (this.previewButton == button) {
 			String text = AmiCenterManagerUtils.formatPreviewScript(previewScript());

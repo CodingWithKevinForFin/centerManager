@@ -28,6 +28,7 @@ public class AmiCenterManagerRichTableEditorPortlet extends GridPortlet {
 		this.service = AmiWebUtils.getService(getManager());
 
 		this.header = new AmiWebHeaderPortlet(generateConfig());
+		this.header.updateBlurbPortletLayout("Rich Table Editor", null);
 		this.header.setShowSearch(false);
 		this.addChild(header, 0, 0, 1, 1);
 

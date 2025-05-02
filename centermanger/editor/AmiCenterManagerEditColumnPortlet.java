@@ -20,6 +20,9 @@ import com.f1.base.Row;
 import com.f1.base.Table;
 import com.f1.container.ResultMessage;
 import com.f1.suite.web.fastwebcolumns.FastWebColumns;
+import com.f1.suite.web.menu.WebMenu;
+import com.f1.suite.web.menu.impl.BasicWebMenu;
+import com.f1.suite.web.menu.impl.BasicWebMenuLink;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.PortletManager;
 import com.f1.suite.web.portal.impl.DividerPortlet;
@@ -31,6 +34,7 @@ import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
 import com.f1.suite.web.portal.impl.form.FormPortletSelectField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
 import com.f1.suite.web.table.WebColumn;
+import com.f1.suite.web.table.WebContextMenuFactory;
 import com.f1.suite.web.table.WebContextMenuListener;
 import com.f1.suite.web.table.WebTable;
 import com.f1.suite.web.table.fast.FastWebTable;
@@ -39,30 +43,20 @@ import com.f1.utils.casters.Caster_Boolean;
 import com.f1.utils.casters.Caster_String;
 import com.f1.utils.concurrent.HasherMap;
 import com.f1.utils.impl.CaseInsensitiveHasher;
+import com.f1.utils.structs.Tuple2;
 import com.f1.utils.structs.table.BasicTable;
 import com.f1.utils.structs.table.SmartTable;
 
-public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements WebContextMenuListener {
+public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements WebContextMenuListener, WebContextMenuFactory {
 
 	final private AmiWebService service;
 	private AmiWebHeaderPortlet header;
 	private HtmlPortlet tableIcon;
 	private FormPortlet tableInfoPortlet;
 	private FastTablePortlet columnMetadata;
+	private String tableName;
 
 	private AmiCenterManagerColumnMetaDataEditForm columnMetaDataEditForm;
-	//children of columnMetaDataEditForm
-	//	private FormPortletTextField columnNameEditField;
-	//	private FormPortletSelectField<Byte> dataTypeEditField;
-	//	private FormPortletCheckboxField noNullEditField;
-	//	private FormPortletCheckboxField noBroadcastEditField;
-	//	//all string related options
-	//	private FormPortletCheckboxField isEnumField = new FormPortletCheckboxField("ENUM");
-	//
-	//	private FormPortletCheckboxField isCompactField = new FormPortletCheckboxField("COMPACT");
-	//	private FormPortletCheckboxField isAsciiField = new FormPortletCheckboxField("ASCII");
-	//	private FormPortletCheckboxField isBitmapField = new FormPortletCheckboxField("BITMAP");
-	//	private FormPortletCheckboxField isOndiskField = new FormPortletCheckboxField("ONDISK");
 
 	private static final String BG_GREY = "_bg=#4c4c4c";
 
@@ -72,6 +66,7 @@ public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements We
 		PortletManager manager = service.getPortletManager();
 		//tableInfo:
 		String tableName = tableConfig.get("name");
+		this.tableName = tableName;
 		String persistengine = tableConfig.get("PersistEngine");
 
 		//init portlets(tableForm and header)
@@ -124,39 +119,9 @@ public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements We
 		this.columnMetadata.addOption(FastTablePortlet.OPTION_TITLE_DIVIDER_HIDDEN, true);
 		//add listener
 		this.columnMetadata.getTable().addMenuListener(this);
-
-		//at this point, this.init = false, disable editing
-		this.columnMetaDataEditForm = new AmiCenterManagerColumnMetaDataEditForm(generateConfig());
-		//		this.columnNameEditField = new FormPortletTextField("Colummn Name");
-		//		this.dataTypeEditField = new FormPortletSelectField<Byte>(Byte.class, "Data Type");
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_STRING, AmiConsts.TYPE_NAME_STRING);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_BINARY, AmiConsts.TYPE_NAME_BINARY);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_BOOLEAN, AmiConsts.TYPE_NAME_BOOLEAN);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_DOUBLE, AmiConsts.TYPE_NAME_DOUBLE);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_FLOAT, AmiConsts.TYPE_NAME_FLOAT);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_UTC, AmiConsts.TYPE_NAME_UTC);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_UTCN, AmiConsts.TYPE_NAME_UTCN);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_LONG, AmiConsts.TYPE_NAME_LONG);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_INT, AmiConsts.TYPE_NAME_INTEGER);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_CHAR, AmiConsts.TYPE_NAME_CHAR);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_SHORT, AmiConsts.TYPE_NAME_SHORT);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_BYTE, AmiConsts.TYPE_NAME_BYTE);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_BIGINT, AmiConsts.TYPE_NAME_BIGINT);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_BIGDEC, AmiConsts.TYPE_NAME_BIGDEC);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_COMPLEX, AmiConsts.TYPE_NAME_COMPLEX);
-		//		dataTypeEditField.addOption(AmiDatasourceColumn.TYPE_UUID, AmiConsts.TYPE_NAME_UUID);
-		//
-		//		this.noNullEditField = new FormPortletCheckboxField("NoNull");
-		//		this.noBroadcastEditField = new FormPortletCheckboxField("NoBroadcast");
-		//		if (!this.init) {
-		//			columnNameEditField.setDisabled(true);
-		//			noNullEditField.setDisabled(true);
-		//			noBroadcastEditField.setDisabled(true);
-		//		}
-		//		this.columnMetaDataEditForm.addField(columnNameEditField);
-		//		this.columnMetaDataEditForm.addField(dataTypeEditField);
-		//		this.columnMetaDataEditForm.addField(noNullEditField);
-		//		this.columnMetaDataEditForm.addField(noBroadcastEditField);
+		//have the ability to create and respond to menu items
+		this.columnMetadata.getTable().setMenuFactory(this);
+		this.columnMetaDataEditForm = new AmiCenterManagerColumnMetaDataEditForm(generateConfig(), tableName, AmiCenterManagerColumnMetaDataEditForm.MODE_EDIT);
 
 		DividerPortlet div = new DividerPortlet(generateConfig(), true, this.columnMetadata, this.columnMetaDataEditForm);
 
@@ -254,24 +219,6 @@ public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements We
 	public void initColumnMetadata(String t) {
 		this.columnMetadata.clearRows();
 		prepareRequestToBackend("SHOW COLUMNS WHERE TableName ==" + "\"" + t + "\";");
-		//		for (AmiWebManager s : service.getWebManagers().getManagers()) {
-		//			AmiWebSystemObjectsManager som = service.getWebManagers().getSystemObjectsManager(s.getCenterId());
-		//			for (String tableName : som.getTableNames()) {
-		//				if (tableName.equals(t)) {
-		//					com.f1.utils.structs.table.stack.BasicCalcTypes tableSchema = som.getTableSchema(tableName);
-		//					if (tableSchema != null)
-		//						for (String columnName : tableSchema.getVarKeys()) {
-		//							AmiWebScriptManagerForLayout scriptManager = this.service.getScriptManager("");
-		//							String type = scriptManager.forType(tableSchema.getType(columnName));
-		//							this.columnMetadata.addRow(columnName, type, null, null, null);
-		//						}
-		//
-		//				}
-		//
-		//			}
-		//
-		//		}
-
 	}
 
 	@Override
@@ -282,7 +229,32 @@ public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements We
 
 	@Override
 	public void onContextMenu(WebTable table, String action) {
-		// TODO Auto-generated method stub
+		String targetColumnName = null;
+		byte actionMode = -1;
+		String dialogTitle = null;
+		if (SH.startsWith(action, "add_column_")) {
+			String temp = SH.afterFirst(action, "add_column_");
+			if (temp.startsWith("before")) {
+				actionMode = AmiCenterManagerColumnMetaDataEditForm.ACTION_ADD_BEFORE;
+				targetColumnName = SH.afterFirst(temp, "before_");
+			} else if (temp.startsWith("after")) {
+				actionMode = AmiCenterManagerColumnMetaDataEditForm.ACTION_ADD_AFTER;
+				targetColumnName = SH.afterFirst(temp, "after_");
+			}
+			dialogTitle = "Add Column";
+		} else if (SH.startsWith(action, "drop_column_")) {
+			actionMode = AmiCenterManagerColumnMetaDataEditForm.ACTION_DROP;
+			targetColumnName = SH.afterFirst(action, "drop_column_");
+			dialogTitle = "Drop Column";
+			String query = "ALTER TABLE " + this.tableName + " DROP " + targetColumnName;
+			getManager().showDialog("Drop Column", new AmiCenterManagerSubmitEditScriptPortlet(this.service, generateConfig(), query),
+					AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
+			return;
+		}
+
+		getManager().showDialog(dialogTitle,
+				new AmiCenterManagerColumnMetaDataEditForm(generateConfig(), this.tableName, AmiCenterManagerColumnMetaDataEditForm.MODE_ADD, targetColumnName, actionMode),
+				AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
 
 	}
 
@@ -299,21 +271,21 @@ public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements We
 		Boolean noNull = (Boolean) row.get("noNull");
 		Integer position = (Integer) row.get("position");
 		String options = (String) row.get("options");
-		FormPortletTextField f1 = (FormPortletTextField) this.columnMetaDataEditForm.getFieldByName("columnName");
+		FormPortletTextField f1 = (FormPortletTextField) this.columnMetaDataEditForm.getForm().getFieldByName("columnName");
 		f1.setValue(columnName);
 		f1.setDisabled(false);
-		FormPortletSelectField f2 = (FormPortletSelectField) this.columnMetaDataEditForm.getFieldByName("dataType");
+		FormPortletSelectField f2 = (FormPortletSelectField) this.columnMetaDataEditForm.getForm().getFieldByName(AmiCenterManagerColumnMetaDataEditForm.VARNAME_COLUMN_DATA_TYPE);
 		f2.setValue(AmiUtils.parseTypeName(dataType));
 		f2.setDisabled(false);
-		FormPortletCheckboxField f3 = (FormPortletCheckboxField) this.columnMetaDataEditForm.getFieldByName(AmiConsts.NONULL);
+		FormPortletCheckboxField f3 = (FormPortletCheckboxField) this.columnMetaDataEditForm.getForm().getFieldByName(AmiConsts.NONULL);
 		f3.setValue(noNull);
 		f3.setDisabled(false);
 		Map<String, String> m = parseOptions(options);
 
 		//set the column cache
-		this.columnMetaDataEditForm.setColumnCache("dataType", dataType);
-		this.columnMetaDataEditForm.setColumnCache("columnName", columnName);
-		this.columnMetaDataEditForm.setColumnCache("noNull", Caster_String.INSTANCE.cast(noNull));
+		this.columnMetaDataEditForm.setColumnCache(AmiCenterManagerColumnMetaDataEditForm.VARNAME_COLUMN_DATA_TYPE, dataType);
+		this.columnMetaDataEditForm.setColumnCache(AmiCenterManagerColumnMetaDataEditForm.VARNAME_COLUMN_NAME, columnName);
+		this.columnMetaDataEditForm.setColumnCache(AmiCenterManagerColumnMetaDataEditForm.VARNAME_NONULL, Caster_String.INSTANCE.cast(noNull));
 		for (Entry<String, String> e : m.entrySet()) {
 			this.columnMetaDataEditForm.setColumnCache(e.getKey(), e.getValue());
 		}
@@ -338,7 +310,6 @@ public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements We
 				this.columnMetaDataEditForm.disableCommonOptions(false);
 				break;
 			case AmiDatasourceColumn.TYPE_STRING:
-				//need to check for nobroadcast for all types
 				setNoBroadCast(m);
 				//enable common options
 				this.columnMetaDataEditForm.disableCommonOptions(false);
@@ -348,6 +319,18 @@ public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements We
 				Boolean isBitmap = Caster_Boolean.INSTANCE.cast(m.get(AmiConsts.BITMAP));
 				Boolean isOndisk = Caster_Boolean.INSTANCE.cast(m.get(AmiConsts.ONDISK));
 				Boolean isEnum = Caster_Boolean.INSTANCE.cast(m.get(AmiConsts.TYPE_NAME_ENUM));
+				boolean isCache = m.get(AmiConsts.CACHE) != null;
+				if (isCache) {
+					getColumnOptionEditField(AmiConsts.CACHE).setValue(true).setDisabled(false);
+					String rawCacheValue = (String) m.get(AmiConsts.CACHE);
+					int cacheValue = parseCacheValue(rawCacheValue).getA();
+					String cacheUnit = parseCacheValue(rawCacheValue).getB();
+					if (SH.isnt(cacheUnit))
+						cacheUnit = AmiConsts.CACHE_UNIT_DEFAULT_BYTE;
+					byte cacheUnitByte = AmiCenterManagerUtils.toCacheUnitCode(cacheUnit);
+					this.columnMetaDataEditForm.getCacheValueField().setValue(SH.toString(cacheValue));
+					this.columnMetaDataEditForm.getCacheUnitField().setValue(cacheUnitByte);
+				}
 				//enable edit for all string options
 				this.columnMetaDataEditForm.disableStringOptions(false);
 				if (isCompact != null && Boolean.TRUE.equals(isCompact)) {
@@ -381,15 +364,32 @@ public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements We
 
 	}
 
+	public static Tuple2<Integer, String> parseCacheValue(String s) {
+		Tuple2<Integer, String> cacheValue = new Tuple2<Integer, String>();
+		StringBuilder digitBuilder = new StringBuilder();
+		StringBuilder unitBuilder = new StringBuilder();
+		for (char c : s.toCharArray()) {
+			if (c == '"')
+				continue;
+			if (Character.isDigit(c))
+				digitBuilder.append(c);
+			else
+				unitBuilder.append(c);
+		}
+		cacheValue.setA(Integer.parseInt(digitBuilder.toString()));
+		cacheValue.setB(unitBuilder.toString());
+		return cacheValue;
+	}
+
 	private void setNoBroadCast(Map<String, String> m) {
-		FormPortletCheckboxField noBroadcastEditField = (FormPortletCheckboxField) this.columnMetaDataEditForm.getFieldByName("NoBroadcast");
+		FormPortletCheckboxField noBroadcastEditField = (FormPortletCheckboxField) this.columnMetaDataEditForm.getForm().getFieldByName("NoBroadcast");
 		Boolean noBroadcast = Caster_Boolean.INSTANCE.cast(m.get(AmiConsts.NOBROADCAST));
 		noBroadcastEditField.setValue(noBroadcast);
 		noBroadcastEditField.setDisabled(false);
 	}
 
 	private FormPortletCheckboxField getColumnOptionEditField(String name) {
-		return (FormPortletCheckboxField) this.columnMetaDataEditForm.getFieldByName(name);
+		return (FormPortletCheckboxField) this.columnMetaDataEditForm.getForm().getFieldByName(name);
 	}
 
 	@Override
@@ -408,6 +408,19 @@ public class AmiCenterManagerEditColumnPortlet extends GridPortlet implements We
 	public void onScroll(int viewTop, int viewPortHeight, long contentWidth, long contentHeight) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public WebMenu createMenu(WebTable table) {
+		FastWebTable ftw = (FastWebTable) table;
+		int origRowPos = ftw.getActiveRow().getLocation();
+		String origColumnName = (String) ftw.getActiveRow().get("columnName");
+		BasicWebMenu m = new BasicWebMenu();
+		m.add(new BasicWebMenuLink("Add Column Before " + origColumnName, true, "add_column_before_" + origColumnName));
+		m.add(new BasicWebMenuLink("Add Column After " + origColumnName, true, "add_column_after_" + origColumnName));
+		m.add(new BasicWebMenuLink("Drop Column", true, "drop_column_" + origColumnName));
+
+		return m;
 	}
 
 }

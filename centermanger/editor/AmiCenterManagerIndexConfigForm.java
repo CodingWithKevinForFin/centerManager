@@ -215,6 +215,7 @@ public class AmiCenterManagerIndexConfigForm extends FormPortlet implements Form
 			String columnName = SH.stripPrefix(action, "add_colvar_", true);
 			((FormPortletTextEditField) field).setValue("");
 			((FormPortletTextEditField) field).insertAtCursor(columnName);
+			this.listener.onOptionFieldEdited(field);
 		}
 
 	}

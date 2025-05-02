@@ -433,8 +433,6 @@ public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, Ami
 
 	@Override
 	public void onAmiEntityUpdated(AmiWebRealtimeObjectManager manager, AmiWebObjectFields fields, AmiWebObject entity) {
-		System.out.println("object updated!!!");
-
 	}
 
 	@Override

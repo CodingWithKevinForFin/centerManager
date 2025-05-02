@@ -7,6 +7,8 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.f1.ami.amicommon.AmiConsts;
+import com.f1.ami.amicommon.msg.AmiDatasourceColumn;
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.graph.AmiCenterGraphNode;
 import com.f1.base.Row;
@@ -637,6 +639,79 @@ public class AmiCenterManagerUtils {
 				return AmiCenterEntityConsts.INDEX_TYPE_SORT;
 			case AmiCenterEntityConsts.INDEX_TYPE_CODE_SERIES:
 				return AmiCenterEntityConsts.INDEX_TYPE_SERIES;
+			default:
+				throw new NullPointerException();
+		}
+	}
+
+	public static byte toCacheUnitCode(String unit) {
+		switch (unit) {
+			case AmiConsts.CACHE_UNIT_GB:
+				return AmiConsts.CODE_CACHE_UNIT_GB;
+			case AmiConsts.CACHE_UNIT_KB:
+				return AmiConsts.CODE_CACHE_UNIT_KB;
+			case AmiConsts.CACHE_UNIT_MB:
+				return AmiConsts.CODE_CACHE_UNIT_MB;
+			case AmiConsts.CACHE_UNIT_TB:
+				return AmiConsts.CODE_CACHE_UNIT_TB;
+			case AmiConsts.CACHE_UNIT_DEFAULT_BYTE:
+				return AmiConsts.CODE_CACHE_UNIT_DEFAULT_BYTE;
+			default:
+				throw new NullPointerException();
+		}
+	}
+
+	public static String toCacheUnit(Byte unit) {
+		switch (unit) {
+			case AmiConsts.CODE_CACHE_UNIT_GB:
+				return AmiConsts.CACHE_UNIT_GB;
+			case AmiConsts.CODE_CACHE_UNIT_KB:
+				return AmiConsts.CACHE_UNIT_KB;
+			case AmiConsts.CODE_CACHE_UNIT_MB:
+				return AmiConsts.CACHE_UNIT_MB;
+			case AmiConsts.CODE_CACHE_UNIT_TB:
+				return AmiConsts.CACHE_UNIT_TB;
+			case AmiConsts.CODE_CACHE_UNIT_DEFAULT_BYTE:
+				return AmiConsts.CACHE_UNIT_DEFAULT_BYTE;
+			default:
+				throw new NullPointerException();
+		}
+	}
+
+	public static byte toDataTypeCode(String type) {
+		switch (type) {
+			case AmiConsts.TYPE_NAME_STRING:
+				return AmiDatasourceColumn.TYPE_STRING;
+			case AmiConsts.TYPE_NAME_BINARY:
+				return AmiDatasourceColumn.TYPE_BINARY;
+			case AmiConsts.TYPE_NAME_BOOLEAN:
+				return AmiDatasourceColumn.TYPE_BOOLEAN;
+			case AmiConsts.TYPE_NAME_DOUBLE:
+				return AmiDatasourceColumn.TYPE_DOUBLE;
+			case AmiConsts.TYPE_NAME_FLOAT:
+				return AmiDatasourceColumn.TYPE_FLOAT;
+			case AmiConsts.TYPE_NAME_UTC:
+				return AmiDatasourceColumn.TYPE_UTC;
+			case AmiConsts.TYPE_NAME_UTCN:
+				return AmiDatasourceColumn.TYPE_UTCN;
+			case AmiConsts.TYPE_NAME_LONG:
+				return AmiDatasourceColumn.TYPE_LONG;
+			case AmiConsts.TYPE_NAME_INTEGER:
+				return AmiDatasourceColumn.TYPE_INT;
+			case AmiConsts.TYPE_NAME_SHORT:
+				return AmiDatasourceColumn.TYPE_SHORT;
+			case AmiConsts.TYPE_NAME_BYTE:
+				return AmiDatasourceColumn.TYPE_BYTE;
+			case AmiConsts.TYPE_NAME_BIGINT:
+				return AmiDatasourceColumn.TYPE_BIGINT;
+			case AmiConsts.TYPE_NAME_BIGDEC:
+				return AmiDatasourceColumn.TYPE_BIGDEC;
+			case AmiConsts.TYPE_NAME_COMPLEX:
+				return AmiDatasourceColumn.TYPE_COMPLEX;
+			case AmiConsts.TYPE_NAME_UUID:
+				return AmiDatasourceColumn.TYPE_UUID;
+			case "<NONE>":
+				return AmiDatasourceColumn.TYPE_NONE;
 			default:
 				throw new NullPointerException();
 		}

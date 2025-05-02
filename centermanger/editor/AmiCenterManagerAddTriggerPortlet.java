@@ -220,8 +220,8 @@ public class AmiCenterManagerAddTriggerPortlet extends FormPortlet
 					if (triggerScript != null) {//triggerScript == null means the type is <NULL>
 						boolean isTriggerComplete = validateTrigger(triggerScript);
 						if (isTriggerComplete) {
-							getManager().showDialog("Submit Trigger", new AmiCenterManagerSubmitTriggerPortlet(this.service, generateConfig(), previewTriggerScript()),
-									AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_HEIGHT);
+							getManager().showDialog("Submit Trigger", new AmiCenterManagerSubmitEditScriptPortlet(this.service, generateConfig(), previewTriggerScript()),
+									AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
 						}
 					} else {//if trigger type is null, throw alert
 						throwAlertDialogue("Please select a trigger type", "Trigger Script");
@@ -275,8 +275,8 @@ public class AmiCenterManagerAddTriggerPortlet extends FormPortlet
 			query = "RENAME TRIGGER " + this.valueCache.get(this.triggerNameField) + " TO " + Caster_String.INSTANCE.cast(this.triggerNameField.getValue());
 		} else
 			query = "DROP TRIGGER " + this.valueCache.get(this.triggerNameField) + ";" + previewTriggerScript();
-		getManager().showDialog("Submit Trigger", new AmiCenterManagerSubmitTriggerPortlet(this.service, generateConfig(), query),
-				AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_HEIGHT);
+		getManager().showDialog("Submit Trigger", new AmiCenterManagerSubmitEditScriptPortlet(this.service, generateConfig(), query),
+				AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
 	}
 
 	@Override
@@ -598,18 +598,18 @@ public class AmiCenterManagerAddTriggerPortlet extends FormPortlet
 	private AmiCenterQueryDsRequest prepareRequest() {
 		AmiCenterQueryDsRequest request = getManager().getTools().nw(AmiCenterQueryDsRequest.class);
 
-		request.setLimit(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_LIMIT);
-		request.setTimeoutMs(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_TIMEOUT);
+		request.setLimit(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_LIMIT);
+		request.setTimeoutMs(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_TIMEOUT);
 		request.setQuerySessionKeepAlive(true);
 		request.setIsTest(false);
-		request.setAllowSqlInjection(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_ALLOW_SQL_INJECTION);
+		request.setAllowSqlInjection(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_ALLOW_SQL_INJECTION);
 		request.setInvokedBy(service.getUserName());
 		request.setSessionVariableTypes(null);
 		request.setSessionVariables(null);
-		request.setPermissions(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PERMISSION);
+		request.setPermissions(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PERMISSION);
 		request.setType(AmiCenterQueryDsRequest.TYPE_QUERY);
 		request.setOriginType(AmiCenterQueryDsRequest.ORIGIN_FRONTEND_SHELL);
-		request.setDatasourceName(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_DS_NAME);
+		request.setDatasourceName(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_DS_NAME);
 		return request;
 	}
 

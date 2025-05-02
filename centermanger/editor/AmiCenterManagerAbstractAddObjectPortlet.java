@@ -152,18 +152,18 @@ public abstract class AmiCenterManagerAbstractAddObjectPortlet extends FormPortl
 	public AmiCenterQueryDsRequest prepareRequest() {
 		AmiCenterQueryDsRequest request = getManager().getTools().nw(AmiCenterQueryDsRequest.class);
 
-		request.setLimit(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_LIMIT);
-		request.setTimeoutMs(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_TIMEOUT);
+		request.setLimit(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_LIMIT);
+		request.setTimeoutMs(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_TIMEOUT);
 		request.setQuerySessionKeepAlive(true);
 		request.setIsTest(false);
-		request.setAllowSqlInjection(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_ALLOW_SQL_INJECTION);
+		request.setAllowSqlInjection(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_ALLOW_SQL_INJECTION);
 		request.setInvokedBy(service.getUserName());
 		request.setSessionVariableTypes(null);
 		request.setSessionVariables(null);
-		request.setPermissions(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PERMISSION);
+		request.setPermissions(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PERMISSION);
 		request.setType(AmiCenterQueryDsRequest.TYPE_QUERY);
 		request.setOriginType(AmiCenterQueryDsRequest.ORIGIN_FRONTEND_SHELL);
-		request.setDatasourceName(AmiCenterManagerSubmitTriggerPortlet.DEFAULT_DS_NAME);
+		request.setDatasourceName(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_DS_NAME);
 		return request;
 	}
 
@@ -351,8 +351,8 @@ public abstract class AmiCenterManagerAbstractAddObjectPortlet extends FormPortl
 
 		String dropQuery = "DROP " + AmiCenterManagerUtils.toCenterObjectString(this.groupCode, true) + " " + oldName + ";";
 		getManager().showDialog("Submit " + AmiCenterManagerUtils.toCenterObjectString(this.groupCode, false),
-				new AmiCenterManagerSubmitObjectPortlet(generateConfig(), dropQuery + previewScript()), AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_WIDTH,
-				AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_HEIGHT);
+				new AmiCenterManagerSubmitObjectPortlet(generateConfig(), dropQuery + previewScript()), AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH,
+				AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
 
 	}
 
@@ -450,8 +450,8 @@ public abstract class AmiCenterManagerAbstractAddObjectPortlet extends FormPortl
 						boolean isTriggerComplete = validateScript(triggerScript);
 						if (isTriggerComplete) {
 							getManager().showDialog("Submit " + AmiCenterManagerUtils.toCenterObjectString(this.groupCode, false),
-									new AmiCenterManagerSubmitObjectPortlet(generateConfig(), previewScript()), AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_WIDTH,
-									AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_HEIGHT);
+									new AmiCenterManagerSubmitObjectPortlet(generateConfig(), previewScript()), AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH,
+									AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
 						}
 					} else {//if trigger type is null, throw alert
 						AmiCenterManagerUtils.popDialog(this.service, "Please select a trigger type", "Trigger Script");

@@ -514,8 +514,8 @@ public class AmiCenterManagerIndexScirptTreePortlet extends GridPortlet implemen
 		} else if (this.testButton == button) {
 			String tableName = this.onField.getValue();
 			String query = "DROP INDEX " + this.fieldCache.get(AmiCenterEntityConsts.OPTION_NAME_INDEX_NAME) + " ON " + tableName + ";" + previewScript();
-			getManager().showDialog("Submit Index", new AmiCenterManagerSubmitTriggerPortlet(this.service, generateConfig(), query),
-					AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitTriggerPortlet.DEFAULT_PORTLET_HEIGHT);
+			getManager().showDialog("Submit Index", new AmiCenterManagerSubmitEditScriptPortlet(this.service, generateConfig(), query),
+					AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
 		}
 	}
 
@@ -717,6 +717,11 @@ public class AmiCenterManagerIndexScirptTreePortlet extends GridPortlet implemen
 			this.resetButton.setEnabled(true);
 			this.diffButton.setEnabled(true);
 		}
+	}
+
+	@Override
+	public void onOptionFieldEdited(FormPortletField<?> field) {
+		onFieldChanged(field);
 	}
 
 	private void updateSuggestedSizeOfWhereFieldForm() {
