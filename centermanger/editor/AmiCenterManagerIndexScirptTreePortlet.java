@@ -78,7 +78,7 @@ public class AmiCenterManagerIndexScirptTreePortlet extends GridPortlet implemen
 	/*strcture:
 	 * <GridPortlet*formGrid:
 	 *  1. FormPortlet*form1: nameField,onField<br>
-	 *  2. IndexConfigForm * indexConfigForm<br>
+	 *  2. IndexConfigForm*form2 indexConfigForm<br>
 	 *  3. FormPortlet*form3: constraintField,autogenField<br>
 	 * */
 	//form
@@ -512,11 +512,44 @@ public class AmiCenterManagerIndexScirptTreePortlet extends GridPortlet implemen
 			String newConfig = AmiWebLayoutHelper.toJson(b, service);
 			AmiWebUtils.diffConfigurations(service, oldConfig, newConfig, "Orginal Script", "New Script", null);
 		} else if (this.testButton == button) {
+			if (!validateFields())
+				return;
 			String tableName = this.onField.getValue();
 			String query = "DROP INDEX " + this.fieldCache.get(AmiCenterEntityConsts.OPTION_NAME_INDEX_NAME) + " ON " + tableName + ";" + previewScript();
 			getManager().showDialog("Submit Index", new AmiCenterManagerSubmitEditScriptPortlet(this.service, generateConfig(), query),
 					AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_WIDTH, AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PORTLET_HEIGHT);
 		}
+	}
+
+	private boolean isAllIndexFieldFilled() {
+		for (int i = 0; i < this.getIndexCount(); i++) {
+			FormPortletTextField colNameFld = this.form2.getIndexColumnNameAt(i);
+			if (SH.isnt(colNameFld.getValue())) {
+				AmiCenterManagerUtils.popDialog(service, "Index at location " + i + " missing a name", "Warning");
+				return false;
+
+			}
+		}
+		return true;
+	}
+
+	private boolean validateFields() {
+		//check if all the required fields have been filled in 
+		if (!isAllIndexFieldFilled()) {
+			return false;
+		}
+
+		//check autogen
+		if (this.autogenField.getValue() != AmiCenterEntityConsts.AUTOGEN_TYPE_CODE_NONE && getIndexCount() != 1) {
+			AmiCenterManagerUtils.popDialog(service, "Autogen can only apply to ONE column with primary constraint", "Warning");
+			return false;
+		}
+
+		return true;
+	}
+
+	public int getIndexCount() {
+		return this.form2.getSize();
 	}
 
 	private boolean hasIndexConfigChanged() {

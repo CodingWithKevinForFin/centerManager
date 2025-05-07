@@ -272,9 +272,7 @@ public abstract class AmiCenterManagerAbstractAddObjectPortlet extends FormPortl
 						String typeAsStr = SH
 								.noNull(OH.cast(this.schemaFields.get(1).getInner(), FormPortletSelectField.class).getOption(this.schemaFields.get(1).getValue()).getName());
 						script.append(typeAsStr);
-					}
-
-					else
+					} else
 						script.append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
 				}
 				if (hasOn) {
@@ -361,7 +359,7 @@ public abstract class AmiCenterManagerAbstractAddObjectPortlet extends FormPortl
 		boolean isValid = !script.contains(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
 		if (!isValid) {
 			String warning = "Missing required fields: " + "<b>" + getPendingRequiredFields() + "</b>";
-			AmiCenterManagerUtils.popDialog(service, warning, "Timer Script Warning");
+			AmiCenterManagerUtils.popDialog(service, warning, "Script Warning");
 			return false;
 		}
 		return true;
