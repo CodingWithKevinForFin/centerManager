@@ -17,6 +17,29 @@ import com.f1.utils.SH;
 
 public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends GridPortlet
 		implements FormPortletContextMenuFactory, FormPortletContextMenuListener, FormPortletListener {
+	public static final int DEFAULT_ROWHEIGHT = 25;
+	public static final int DEFAULT_LEFTPOS = 75; //164
+	public static final int DEFAULT_Y_SPACING = 10;
+	public static final int DEFAULT_X_SPACING = 65;
+	public static final int DEFAULT_TOPPOS = DEFAULT_Y_SPACING;
+
+	//Width consts
+	public static final int NAME_WIDTH = 110;
+	public static final int TYPE_WIDTH = 100;
+	public static final int PRIORITY_WIDTH = 100;
+	public static final int ON_WIDTH = 150;
+	public static final int TIMEOUT_WIDTH = 100;
+	public static final int LIMIT_WIDTH = 100;
+	public static final int LOGGING_WIDTH = 80;
+	public static final int VARS_WIDTH = 700;
+
+	//height const
+	public static final int OPTION_FORM_HEIGHT = 120;
+	public static final int AMISCRIPT_FORM_HEIGHT = 600;
+
+	//padding
+	public static final int AMISCRIPT_FORM_PADDING = 0;
+
 	protected final AmiWebService service;
 	protected boolean isAdd = false;
 

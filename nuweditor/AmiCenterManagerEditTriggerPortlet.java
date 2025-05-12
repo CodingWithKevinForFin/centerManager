@@ -2,49 +2,54 @@ package com.f1.ami.web.centermanager.nuweditor;
 
 import java.util.Map;
 
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Aggregate;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Amiscirpt;
 import com.f1.ami.web.centermanger.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanger.AmiCenterManagerUtils;
-import com.f1.ami.web.centermanger.editor.AmiCenterManagerAddTriggerPortlet.AmiCenterManagerOptionField;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.GridPortlet;
+import com.f1.suite.web.portal.impl.HtmlPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.suite.web.portal.impl.form.FormPortletSelectField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
 
 public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstractEditCenterObjectPortlet {
-	private static final int DEFAULT_ROWHEIGHT = 25;
-	private static final int DEFAULT_LEFTPOS = 75; //164
-	private static final int DEFAULT_Y_SPACING = 10;
-	private static final int DEFAULT_X_SPACING = 65;
-	private static final int DEFAULT_TOPPOS = DEFAULT_Y_SPACING;
-
-	//Width consts
-	private static final int NAME_WIDTH = 110;
-	private static final int ON_WIDTH = 110;
-	private static final int TYPE_WIDTH = 100;
-	private static final int PRIORITY_WIDTH = 70;
 	//height const
-	private static final int OPTION_FORM_HEIGHT = 120;
-	private static final int AMISCRIPT_FORM_HEIGHT = 600;
+	private static final int OPTION_FORM_HEIGHT = 40;//common option form height
 
-	//padding
-	private static final int AMISCRIPT_FORM_PADDING = 0;
 	//option fields
 	final private FormPortlet form;
-	final private FormPortlet configForm;
-	private FormPortletTextField triggerNameField;
-	private FormPortletSelectField<Short> triggerTypeField;
 
-	private FormPortletTextField triggerOnField;
-	private FormPortletTextField triggerPriorityField;
-	private AmiCenterManagerOptionField configTitleField;
+	final private GridPortlet formAndTriggerConfigGrid;
+
+	final private FormPortletTextField triggerNameField;
+	final private FormPortletSelectField<Short> triggerTypeField;
+
+	final private FormPortletTextField triggerOnField;
+	final private FormPortletTextField triggerPriorityField;
+
+	//trigger editors
+	final private AmiCenterManagerTriggerEditor_Amiscirpt amiscriptEditor;
+	final private AmiCenterManagerTriggerEditor_Aggregate aggEditor;
+
+	//trigger-type-specific editor
+	private InnerPortlet editorPanel;//all the type-specific fields excluding amiscript fields
 
 	public AmiCenterManagerEditTriggerPortlet(PortletConfig config, boolean isAdd) {
 		super(config, isAdd);
 		this.form = new FormPortlet(generateConfig());
-		this.configForm = new FormPortlet(generateConfig());
+		amiscriptEditor = new AmiCenterManagerTriggerEditor_Amiscirpt(generateConfig());
+		this.getManager().onPortletAdded(amiscriptEditor);
+		aggEditor = new AmiCenterManagerTriggerEditor_Aggregate(generateConfig());
+		this.getManager().onPortletAdded(aggEditor);
+
+		formAndTriggerConfigGrid = new GridPortlet(generateConfig());
+		formAndTriggerConfigGrid.addChild(form, 0, 0);
+		formAndTriggerConfigGrid.setRowSize(0, OPTION_FORM_HEIGHT);
+		this.editorPanel = formAndTriggerConfigGrid.addChild(new HtmlPortlet(generateConfig()).setCssStyle("_bg=#e2e2e2"), 0, 1, 1, 1);
+
 		triggerNameField = this.form.addField(new FormPortletTextField(AmiCenterManagerUtils.formatRequiredField("Name")));
 		triggerNameField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
 		triggerNameField.setWidth(NAME_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS);
@@ -67,15 +72,16 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 				.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + ON_WIDTH + (int) (DEFAULT_X_SPACING * 3.5)).setTopPosPx(DEFAULT_TOPPOS);
 
 		//starting type-specific fields
+		//		canMutateRowField = this.configForm.addField(new FormPortletCheckboxField("canMutateRow"));
 
-		GridPortlet grid = new GridPortlet(generateConfig());
-		grid.addChild(form, 0, 0);
-		grid.addChild(configForm, 0, 1);
+		//by default
+		editorPanel.setPortlet(amiscriptEditor);
 
-		this.addChild(grid, 0, 0);
+		this.addChild(formAndTriggerConfigGrid, 0, 0);
 		this.addChild(buttonsFp, 0, 1);
 
 		setRowSize(1, buttonsFp.getButtonPanelHeight());
+		this.form.addFormPortletListener(this);
 	}
 
 	private void initTriggerTypes() {
@@ -87,20 +93,14 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		triggerTypeField.addOption(AmiCenterEntityConsts.TRIGGER_TYPE_CODE_RELAY, AmiCenterEntityConsts.TRIGGER_TYPE_RELAY);
 	}
 
-	private void generateTemplate(short type) {
+	private void updateTriggerTemplate(short type) {
 		switch (type) {
-			//			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AMISCRIPT:
-			//				insertOptionField("canMutateRow", FormPortletCheckboxField.class, false);
-			//				insertOptionField("runOnStartup", FormPortletCheckboxField.class, false);
-			//				insertOptionField("onInsertingScript", AmiWebFormPortletAmiScriptField.class, false);
-			//				insertOptionField("onUpdatingScript", AmiWebFormPortletAmiScriptField.class, false);
-			//				insertOptionField("onDeletingScript", AmiWebFormPortletAmiScriptField.class, false);
-			//				insertOptionField("onInsertedScript", AmiWebFormPortletAmiScriptField.class, false);
-			//				insertOptionField("onUpdatedScript", AmiWebFormPortletAmiScriptField.class, false);
-			//				insertOptionField("rowVar", FormPortletTextField.class, false);
-			//				insertOptionField("onStartupScript", AmiWebFormPortletAmiScriptField.class, false);
-			//				break;
-			//			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AGGREGATE:
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AMISCRIPT:
+				editorPanel.setPortlet(amiscriptEditor);
+				break;
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AGGREGATE:
+				editorPanel.setPortlet(aggEditor);
+				break;
 			//				insertOptionField("groupBys", FormPortletTextField.class, true);
 			//				insertOptionField("selects", FormPortletTextField.class, true);
 			//				insertOptionField("allowExternalUpdates", FormPortletCheckboxField.class, false);
@@ -154,7 +154,10 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 	@Override
 	public void onFieldValueChanged(FormPortlet portlet, FormPortletField<?> field, Map<String, String> attributes) {
-		// TODO Auto-generated method stub
+		if (field == this.triggerTypeField) {
+			short type = this.triggerTypeField.getValue();
+			updateTriggerTemplate(type);
+		}
 
 	}
 

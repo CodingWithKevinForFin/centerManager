@@ -16,28 +16,6 @@ import com.f1.suite.web.portal.impl.form.FormPortletTextField;
 import com.f1.utils.SH;
 
 public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEditCenterObjectPortlet {
-	private static final int DEFAULT_ROWHEIGHT = 25;
-	private static final int DEFAULT_LEFTPOS = 75; //164
-	private static final int DEFAULT_Y_SPACING = 10;
-	private static final int DEFAULT_X_SPACING = 65;
-	private static final int DEFAULT_TOPPOS = DEFAULT_Y_SPACING;
-
-	//Width consts
-	private static final int NAME_WIDTH = 110;
-	private static final int TYPE_WIDTH = 80;
-	private static final int PRIORITY_WIDTH = 100;
-	private static final int ON_WIDTH = 150;
-	private static final int TIMEOUT_WIDTH = 100;
-	private static final int LIMIT_WIDTH = 100;
-	private static final int LOGGING_WIDTH = 80;
-	private static final int VARS_WIDTH = 700;
-
-	//height const
-	private static final int OPTION_FORM_HEIGHT = 120;
-	private static final int AMISCRIPT_FORM_HEIGHT = 600;
-
-	//padding
-	private static final int AMISCRIPT_FORM_PADDING = 0;
 
 	final private FormPortlet form;
 	final private TabPortlet scriptTabs;
