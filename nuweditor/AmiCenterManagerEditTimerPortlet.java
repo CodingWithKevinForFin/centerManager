@@ -197,7 +197,7 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 	public String preparePreUseClause() {
 		StringBuilder sb = new StringBuilder("CREATE TIMER ");
 		if (SH.is(nameField.getValue()))
-			sb.append(SH.doubleQuote(nameField.getValue()));
+			sb.append(nameField.getValue());
 		else
 			sb.append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
 		sb.append(" OFTYPE ").append(timerTypeField.getOption(timerTypeField.getValue()).getName());

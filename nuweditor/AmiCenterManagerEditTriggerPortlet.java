@@ -2,8 +2,13 @@ package com.f1.ami.web.centermanager.nuweditor;
 
 import java.util.Map;
 
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerAbstractTriggerEditor;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Aggregate;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Amiscirpt;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Decorate;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Join;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Projection;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Relay;
 import com.f1.ami.web.centermanger.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanger.AmiCenterManagerUtils;
 import com.f1.suite.web.menu.WebMenu;
@@ -14,6 +19,7 @@ import com.f1.suite.web.portal.impl.form.FormPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.suite.web.portal.impl.form.FormPortletSelectField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
+import com.f1.utils.SH;
 
 public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstractEditCenterObjectPortlet {
 	//height const
@@ -29,10 +35,15 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 	final private FormPortletTextField triggerOnField;
 	final private FormPortletTextField triggerPriorityField;
+	private AmiCenterManagerAbstractTriggerEditor curEditor;
 
 	//trigger editors
 	final private AmiCenterManagerTriggerEditor_Amiscirpt amiscriptEditor;
 	final private AmiCenterManagerTriggerEditor_Aggregate aggEditor;
+	final private AmiCenterManagerTriggerEditor_Projection projectionEditor;
+	final private AmiCenterManagerTriggerEditor_Join joinEditor;
+	final private AmiCenterManagerTriggerEditor_Decorate decorateEditor;
+	final private AmiCenterManagerTriggerEditor_Relay relayEditor;
 
 	//trigger-type-specific editor
 	private InnerPortlet editorPanel;//all the type-specific fields excluding amiscript fields
@@ -44,6 +55,14 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		this.getManager().onPortletAdded(amiscriptEditor);
 		aggEditor = new AmiCenterManagerTriggerEditor_Aggregate(generateConfig());
 		this.getManager().onPortletAdded(aggEditor);
+		projectionEditor = new AmiCenterManagerTriggerEditor_Projection(generateConfig());
+		this.getManager().onPortletAdded(projectionEditor);
+		joinEditor = new AmiCenterManagerTriggerEditor_Join(generateConfig());
+		this.getManager().onPortletAdded(joinEditor);
+		decorateEditor = new AmiCenterManagerTriggerEditor_Decorate(generateConfig());
+		this.getManager().onPortletAdded(decorateEditor);
+		relayEditor = new AmiCenterManagerTriggerEditor_Relay(generateConfig());
+		this.getManager().onPortletAdded(relayEditor);
 
 		formAndTriggerConfigGrid = new GridPortlet(generateConfig());
 		formAndTriggerConfigGrid.addChild(form, 0, 0);
@@ -76,6 +95,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 		//by default
 		editorPanel.setPortlet(amiscriptEditor);
+		curEditor = amiscriptEditor;
 
 		this.addChild(formAndTriggerConfigGrid, 0, 0);
 		this.addChild(buttonsFp, 0, 1);
@@ -97,45 +117,30 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		switch (type) {
 			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AMISCRIPT:
 				editorPanel.setPortlet(amiscriptEditor);
+				curEditor = amiscriptEditor;
 				break;
 			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AGGREGATE:
 				editorPanel.setPortlet(aggEditor);
+				curEditor = aggEditor;
 				break;
-			//				insertOptionField("groupBys", FormPortletTextField.class, true);
-			//				insertOptionField("selects", FormPortletTextField.class, true);
-			//				insertOptionField("allowExternalUpdates", FormPortletCheckboxField.class, false);
-			//				break;
-			//			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_DECORATE:
-			//				insertOptionField("on", FormPortletTextField.class, true);
-			//				insertOptionField("selects", FormPortletTextField.class, true);
-			//				insertOptionField("keysChange", FormPortletCheckboxField.class, false);
-			//				break;
-			//			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_JOIN:
-			//				insertOptionField("type", CH.l("INNER", "LEFT", "RIGHT", "OUTER", "LEFT ONLY", "RIGHT ONLY", "OUTER ONLY"), false);
-			//				insertOptionField("on", FormPortletTextField.class, true);
-			//				insertOptionField("selects", FormPortletTextField.class, true);
-			//				insertOptionField("wheres", FormPortletTextField.class, false);
-			//				break;
-			//			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_PROJECTION:
-			//				insertOptionField("selects", FormPortletTextField.class, true);
-			//				insertOptionField("wheres", FormPortletTextField.class, false);
-			//				insertOptionField("allowExternalUpdates", FormPortletCheckboxField.class, false);
-			//				break;
-			//			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_RELAY:
-			//				insertOptionField("hosts", FormPortletTextField.class, true);
-			//				insertOptionField("port", FormPortletTextField.class, true);
-			//				insertOptionField("login", FormPortletTextField.class, true);
-			//				insertOptionField("keystoreFile", FormPortletTextField.class, false);
-			//				insertOptionField("keystorePass", FormPortletTextField.class, false);
-			//				insertOptionField("derivedValues", FormPortletTextField.class, false);
-			//				insertOptionField("inserts", FormPortletTextField.class, false);
-			//				insertOptionField("updates", FormPortletTextField.class, false);
-			//				insertOptionField("deletes", FormPortletTextField.class, false);
-			//				insertOptionField("target", FormPortletTextField.class, false);
-			//				insertOptionField("where", FormPortletTextField.class, false);
-			//				break;
-			//			default:
-			//				throw new RuntimeException("Unknow trigger type code: " + type);
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_DECORATE:
+				editorPanel.setPortlet(decorateEditor);
+				curEditor = decorateEditor;
+				break;
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_JOIN:
+				editorPanel.setPortlet(joinEditor);
+				curEditor = joinEditor;
+				break;
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_PROJECTION:
+				editorPanel.setPortlet(projectionEditor);
+				curEditor = projectionEditor;
+				break;
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_RELAY:
+				editorPanel.setPortlet(relayEditor);
+				curEditor = relayEditor;
+				break;
+			default:
+				throw new RuntimeException("Unknow trigger type code: " + type);
 
 		}
 	}
@@ -169,14 +174,26 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 	@Override
 	public String prepareUseClause() {
-		// TODO Auto-generated method stub
-		return null;
+		return curEditor.getKeyValuePairs();
 	}
 
 	@Override
 	public String preparePreUseClause() {
-		// TODO Auto-generated method stub
-		return null;
+		StringBuilder sb = new StringBuilder("CREATE TRIGGER ");
+		if (SH.is(triggerNameField.getValue()))
+			sb.append(triggerNameField.getValue());
+		else
+			sb.append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
+		sb.append(" OFTYPE ").append(triggerTypeField.getOption(triggerTypeField.getValue()).getName());
+
+		if (SH.is(triggerOnField.getValue()))
+			sb.append(" ON ").append(triggerOnField.getValue());
+		else
+			sb.append(" ON ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
+
+		if (SH.is(triggerPriorityField.getValue()))
+			sb.append(" PRIORITY ").append(triggerPriorityField.getValue());
+		return sb.toString();
 	}
 
 }

@@ -7,27 +7,28 @@ import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
 import com.f1.utils.SH;
 
-public class AmiCenterManagerTriggerEditor_Aggregate extends AmiCenterManagerAbstractTriggerEditor {
+public class AmiCenterManagerTriggerEditor_Projection extends AmiCenterManagerAbstractTriggerEditor {
 	private static final int FORM_LEFT_POSITION = 120;
 	private static final int FORM_WIDTH = 550;
 	private static final int FORM_HEIGHT = 300;
 
 	final private FormPortletCheckboxField allowExternalUpdateField;
-	final private AmiWebFormPortletAmiScriptField groupBysField;
+	final private AmiWebFormPortletAmiScriptField wheresField;
 	final private AmiWebFormPortletAmiScriptField selectsField;
 
-	public AmiCenterManagerTriggerEditor_Aggregate(PortletConfig config) {
+	public AmiCenterManagerTriggerEditor_Projection(PortletConfig config) {
 		super(config);
 
 		allowExternalUpdateField = form.addField(new FormPortletCheckboxField("allowExternalUpdates"));
 		allowExternalUpdateField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
 				+ "If true, then other processes (i.e triggers, UPDATEs) are allowed to perform UPDATEs on the target table." + "<br>"
 				+ " Please use precaution when using this feature, since updating cells controlled by the aggregate trigger will result into an undesirable state.");
-		groupBysField = form.addField(new AmiWebFormPortletAmiScriptField(AmiCenterManagerUtils.formatRequiredField("groupBys"), getManager(), ""));
-		groupBysField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
-		groupBysField.setLeftPosPx(FORM_LEFT_POSITION).setWidth(FORM_WIDTH).setHeight(FORM_HEIGHT).setTopPosPx(50);
-		groupBysField.setHelp("A comma delimited list of expressions to group rows by, each expression being of the form:" + "<br>"
-				+ "<b><i style=\"color:blue\">targetTableColumn = expression_on_sourceTableColumns [,targetTableColumn = expression_on_sourceTableColumns ...]</i></b>");
+
+		wheresField = form.addField(new AmiWebFormPortletAmiScriptField(AmiCenterManagerUtils.formatRequiredField("wheres"), getManager(), ""));
+		wheresField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
+		wheresField.setLeftPosPx(FORM_LEFT_POSITION).setWidth(FORM_WIDTH).setHeight(FORM_HEIGHT).setTopPosPx(50);
+		wheresField.setHelp("A comma-delimited list of boolean expressions that must all be true on a source table's row in order for it to be projected into the target table:"
+				+ "<br>" + "<b><i style=\"color:blue\">expression_on_sourceTableColumns,[ expression_on_sourceTableColumns ...]</i></b>");
 
 		selectsField = form.addField(new AmiWebFormPortletAmiScriptField(AmiCenterManagerUtils.formatRequiredField("selects"), getManager(), ""));
 		selectsField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
@@ -40,10 +41,10 @@ public class AmiCenterManagerTriggerEditor_Aggregate extends AmiCenterManagerAbs
 	@Override
 	public String getKeyValuePairs() {
 		StringBuilder sb = new StringBuilder();
-		if (SH.is(groupBysField.getValue()))
-			sb.append(" groupBys = ").append(SH.doubleQuote(groupBysField.getValue()));
+		if (SH.is(wheresField.getValue()))
+			sb.append(" wheres = ").append(SH.doubleQuote(wheresField.getValue()));
 		else
-			sb.append(" groupBys = ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
+			sb.append(" wheres = ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
 
 		if (SH.is(selectsField.getValue()))
 			sb.append(" selects = ").append(SH.doubleQuote(selectsField.getValue()));
