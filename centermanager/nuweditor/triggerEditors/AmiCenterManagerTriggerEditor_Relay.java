@@ -1,9 +1,9 @@
 package com.f1.ami.web.centermanager.nuweditor.triggerEditors;
 
 import com.f1.ami.web.AmiWebFormPortletAmiScriptField;
+import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
+import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerAbstractEditCenterObjectPortlet;
-import com.f1.ami.web.centermanger.AmiCenterEntityConsts;
-import com.f1.ami.web.centermanger.AmiCenterManagerUtils;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
 import com.f1.utils.SH;

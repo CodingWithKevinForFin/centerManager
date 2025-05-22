@@ -3,8 +3,8 @@ package com.f1.ami.web.centermanager.nuweditor;
 import java.util.Map;
 
 import com.f1.ami.web.AmiWebFormPortletAmiScriptField;
-import com.f1.ami.web.centermanger.AmiCenterEntityConsts;
-import com.f1.ami.web.centermanger.AmiCenterManagerUtils;
+import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
+import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.GridPortlet;
