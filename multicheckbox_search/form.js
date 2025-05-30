@@ -3531,6 +3531,8 @@ MultiCheckboxField.prototype.show=function(){
 	menu.show(new Point(r.left,r.top+this.height), true);
 	menu.setCssStyle(this.style);
 	menu.bypass=true;
+	this.menuHeightBeforeFilter = menu.divElement.style.height;
+	this.menuOverflowBeforeFilter = menu.divElement.style.overflow;
 	//add
 	menu.owner = that;
 	menu.onHide=function(){
@@ -3576,7 +3578,7 @@ MultiCheckboxField.prototype.filterOptions = function(searchTerm) {
     this.filteredOptions = new Map(Array.from(this.options).filter(([key, value]) =>
     value.toLowerCase().includes(lowerSearchTerm)
     ));
-   
+    
     //clear and rebuild the menu
    const table = this.menu.divElement.children[0];
    //remove all the rows except for the search box
@@ -3586,14 +3588,19 @@ MultiCheckboxField.prototype.filterOptions = function(searchTerm) {
    
    //remove the divElement.style.height, and let this be determined by the number of filtered options
 	var calcuatedContainerHeight = this.filteredOptions.size*28 + 37+10;
-	if(calcuatedContainerHeight <  parseInt(this.menu.divElement.style.height)){
+	
+	if(calcuatedContainerHeight <  parseInt(this.menuHeightBeforeFilter )){
 		this.menu.divElement.style.height = `${calcuatedContainerHeight}px`;
 		this.menu.divElement.style.overflow = 'hidden'; //remove scroll
+	} else{
+		this.menu.divElement.style.height = this.menuHeightBeforeFilter;
+		this.menu.divElement.style.overflow = this.menuOverflowBeforeFilter;
 	}
+   
+   
+		
 		
    this.menu.createMenu(this.updateMenuJson(), function(e, action){});
-  
-
     
 }
 
