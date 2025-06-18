@@ -5,6 +5,7 @@ import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors.AmiCenterManagerTriggerEditor_AggregateGroupByEditor;
 import com.f1.base.Action;
 import com.f1.container.ResultMessage;
 import com.f1.suite.web.portal.PortletConfig;
@@ -29,10 +30,10 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 	public static final int DEFAULT_TOPPOS = DEFAULT_Y_SPACING;
 
 	//Width consts
-	public static final int NAME_WIDTH = 110;
+	public static final int NAME_WIDTH = 130;
 	public static final int TYPE_WIDTH = 100;
 	public static final int PRIORITY_WIDTH = 100;
-	public static final int ON_WIDTH = 150;
+	public static final int ON_WIDTH = 700;
 	public static final int TIMEOUT_WIDTH = 100;
 	public static final int LIMIT_WIDTH = 100;
 	public static final int LOGGING_WIDTH = 80;
@@ -97,6 +98,10 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 			portletManager.showDialog("Script", cdp, dp.getDialogWidth(), dp.getDialogHeight());
 		} else if (button == this.importExportButton) {
 			getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerScriptExportPortlet(generateConfig(), this));
+		} else if (button == this.submitButton) {
+			//getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerTriggerEditor_SelectEditor(generateConfig()), 800, 750);
+
+			getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerTriggerEditor_AggregateGroupByEditor(generateConfig()), 800, 750);
 		}
 
 	}

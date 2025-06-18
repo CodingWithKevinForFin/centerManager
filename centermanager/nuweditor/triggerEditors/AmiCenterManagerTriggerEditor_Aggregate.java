@@ -23,11 +23,14 @@ public class AmiCenterManagerTriggerEditor_Aggregate extends AmiCenterManagerAbs
 		allowExternalUpdateField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
 				+ "If true, then other processes (i.e triggers, UPDATEs) are allowed to perform UPDATEs on the target table." + "<br>"
 				+ " Please use precaution when using this feature, since updating cells controlled by the aggregate trigger will result into an undesirable state.");
+
 		groupBysField = form.addField(new AmiWebFormPortletAmiScriptField(AmiCenterManagerUtils.formatRequiredField("groupBys"), getManager(), ""));
 		groupBysField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
 		groupBysField.setLeftPosPx(FORM_LEFT_POSITION).setWidth(FORM_WIDTH).setHeight(FORM_HEIGHT).setTopPosPx(50);
 		groupBysField.setHelp("A comma delimited list of expressions to group rows by, each expression being of the form:" + "<br>"
 				+ "<b><i style=\"color:blue\">targetTableColumn = expression_on_sourceTableColumns [,targetTableColumn = expression_on_sourceTableColumns ...]</i></b>");
+
+		//		DividerPortlet div = new DividerPortlet(getManager(), true, groupBysField, selectsField);
 
 		selectsField = form.addField(new AmiWebFormPortletAmiScriptField(AmiCenterManagerUtils.formatRequiredField("selects"), getManager(), ""));
 		selectsField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);

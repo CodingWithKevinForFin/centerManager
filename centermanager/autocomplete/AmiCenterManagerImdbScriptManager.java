@@ -33,7 +33,6 @@ public class AmiCenterManagerImdbScriptManager {
 		this.predefinedMethodsFactory = new BasicMethodFactory();
 		AmiUtils.addTypes(predefinedMethodsFactory);
 		//this.service.addTimedEvent(time, layoutAlias, script, calc);
-
 		SqlProcessor sp = new SqlProcessor();
 		List<AmiWebFunctionFactory> funcs = CH.l(AmiUtils.getFunctions());
 		funcs.add(new AmiWebFunctionIsInstanceOf.Factory(predefinedMethodsFactory));

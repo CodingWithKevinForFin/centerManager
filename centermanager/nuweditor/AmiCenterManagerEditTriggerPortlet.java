@@ -3,30 +3,39 @@ package com.f1.ami.web.centermanager.nuweditor;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
+import com.f1.ami.amicommon.msg.AmiCenterQueryDsResponse;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
+import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerAbstractTriggerEditor;
-import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Aggregate;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AggregateTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Amiscirpt;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Decorate;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Join;
-import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Projection;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_ProjectionTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Relay;
 import com.f1.ami.web.graph.AmiCenterGraphNode;
+import com.f1.base.Action;
+import com.f1.base.Row;
+import com.f1.base.Table;
+import com.f1.container.ResultMessage;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.GridPortlet;
 import com.f1.suite.web.portal.impl.HtmlPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortletField;
+import com.f1.suite.web.portal.impl.form.FormPortletMultiCheckboxField;
 import com.f1.suite.web.portal.impl.form.FormPortletSelectField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
+import com.f1.utils.CH;
 import com.f1.utils.SH;
 import com.f1.utils.string.sqlnode.AdminNode;
 
 public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstractEditCenterObjectPortlet {
 	//height const
-	private static final int OPTION_FORM_HEIGHT = 40;//common option form height
+	private static final int OPTION_FORM_HEIGHT = 90;//common option form height
 
 	//option fields
 	final private FormPortlet form;
@@ -36,14 +45,14 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 	final private FormPortletTextField triggerNameField;
 	final private FormPortletSelectField<Short> triggerTypeField;
 
-	final private FormPortletTextField triggerOnField;
+	final private FormPortletMultiCheckboxField<String> triggerOnField;
 	final private FormPortletTextField triggerPriorityField;
 	private AmiCenterManagerAbstractTriggerEditor curEditor;
 
 	//trigger editors
 	final private AmiCenterManagerTriggerEditor_Amiscirpt amiscriptEditor;
-	final private AmiCenterManagerTriggerEditor_Aggregate aggEditor;
-	final private AmiCenterManagerTriggerEditor_Projection projectionEditor;
+	final private AmiCenterManagerTriggerEditor_AggregateTrigger aggEditor;
+	final private AmiCenterManagerTriggerEditor_ProjectionTrigger projectionEditor;
 	final private AmiCenterManagerTriggerEditor_Join joinEditor;
 	final private AmiCenterManagerTriggerEditor_Decorate decorateEditor;
 	final private AmiCenterManagerTriggerEditor_Relay relayEditor;
@@ -56,9 +65,9 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		this.form = new FormPortlet(generateConfig());
 		amiscriptEditor = new AmiCenterManagerTriggerEditor_Amiscirpt(generateConfig());
 		this.getManager().onPortletAdded(amiscriptEditor);
-		aggEditor = new AmiCenterManagerTriggerEditor_Aggregate(generateConfig());
+		aggEditor = new AmiCenterManagerTriggerEditor_AggregateTrigger(generateConfig());
 		this.getManager().onPortletAdded(aggEditor);
-		projectionEditor = new AmiCenterManagerTriggerEditor_Projection(generateConfig());
+		projectionEditor = new AmiCenterManagerTriggerEditor_ProjectionTrigger(generateConfig());
 		this.getManager().onPortletAdded(projectionEditor);
 		joinEditor = new AmiCenterManagerTriggerEditor_Join(generateConfig());
 		this.getManager().onPortletAdded(joinEditor);
@@ -82,16 +91,19 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		initTriggerTypes();
 		triggerTypeField.setWidth(TYPE_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + DEFAULT_X_SPACING).setTopPosPx(DEFAULT_TOPPOS);
 
-		triggerOnField = this.form.addField(new FormPortletTextField(AmiCenterManagerUtils.formatRequiredField("ON")));
+		triggerOnField = this.form.addField(new FormPortletMultiCheckboxField(String.class, AmiCenterManagerUtils.formatRequiredField("ON")));
 		triggerOnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
 		triggerOnField.setHelp("Name of the table(s) that will cause the trigger to execute");
-		triggerOnField.setWidth(ON_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + DEFAULT_X_SPACING * 2)
-				.setTopPosPx(DEFAULT_TOPPOS);
+		//		triggerOnField.setWidth(ON_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + DEFAULT_X_SPACING * 2)
+		//				.setTopPosPx(DEFAULT_TOPPOS);
+		triggerOnField.setWidth(ON_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS + DEFAULT_ROWHEIGHT * 2);
+		triggerOnField.setBgColor("#ffffff");
+		triggerOnField.setBorderColor("00FFFFFF");
 
 		triggerPriorityField = this.form.addField(new FormPortletTextField("PRIORITY"));
 		triggerPriorityField.setHelp("a number, timers with lowest value are executed first. Only considered when two or more timers have the same exact scheduled time");
-		triggerPriorityField.setWidth(PRIORITY_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT)
-				.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + ON_WIDTH + (int) (DEFAULT_X_SPACING * 3.5)).setTopPosPx(DEFAULT_TOPPOS);
+		triggerPriorityField.setWidth(PRIORITY_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + (int) (DEFAULT_X_SPACING * 3.5))
+				.setTopPosPx(DEFAULT_TOPPOS);
 
 		//by default
 		editorPanel.setPortlet(amiscriptEditor);
@@ -102,6 +114,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 		setRowSize(1, buttonsFp.getButtonPanelHeight());
 		this.form.addFormPortletListener(this);
+		sendQueryToBackend("SELECT TableName FROM SHOW TABLES;");
 	}
 
 	private void initTriggerTypes() {
@@ -162,6 +175,8 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		if (field == this.triggerTypeField) {
 			short type = this.triggerTypeField.getValue();
 			updateTriggerTemplate(type);
+		} else if (field == this.triggerOnField) {
+			System.out.println(field.getValue());
 		}
 
 	}
@@ -213,16 +228,62 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 			else if ("triggerType".equals(key)) {
 				this.triggerTypeField.setValue(AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TRIGGER, value));
 				this.onFieldValueChanged(this.form, this.triggerTypeField, null);
-			} else if ("triggerOn".equals(key))
-				this.triggerOnField.setValue(value);
-			else if ("triggerPriority".equals(key))
+			} else if ("triggerOn".equals(key)) {
+				this.triggerOnField.setValue(CH.s(value));
+			} else if ("triggerPriority".equals(key))
 				this.triggerPriorityField.setValue(value);
 			else {//TODO:all the use options go here
 
 			}
 		}
-
 		return;
+	}
+
+	//The abilities to query the backend
+	@Override
+	public void onBackendResponse(ResultMessage<Action> result) {
+		if (result.getError() != null) {
+			getManager().showAlert("Internal Error:" + result.getError().getMessage(), result.getError());
+			return;
+		}
+		AmiCenterQueryDsResponse response = (AmiCenterQueryDsResponse) result.getAction();
+		if (response.getOk() && response.getTables().size() == 1) {
+			Table t = response.getTables().get(0);
+			//populate table names into the ON field options
+			for (Row r : t.getRows()) {
+				String name = (String) r.get("TableName");
+				this.triggerOnField.addOption(name, name);
+			}
+		}
+	}
+
+	public AmiCenterQueryDsRequest prepareRequest() {
+		AmiCenterQueryDsRequest request = getManager().getTools().nw(AmiCenterQueryDsRequest.class);
+
+		request.setLimit(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_LIMIT);
+		request.setTimeoutMs(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_TIMEOUT);
+		request.setQuerySessionKeepAlive(true);
+		request.setIsTest(false);
+		request.setAllowSqlInjection(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_ALLOW_SQL_INJECTION);
+		request.setInvokedBy(service.getUserName());
+		request.setSessionVariableTypes(null);
+		request.setSessionVariables(null);
+		request.setPermissions(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PERMISSION);
+		request.setType(AmiCenterQueryDsRequest.TYPE_QUERY);
+		request.setOriginType(AmiCenterQueryDsRequest.ORIGIN_FRONTEND_SHELL);
+		request.setDatasourceName(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_DS_NAME);
+		return request;
+	}
+
+	protected void sendQueryToBackend(String query) {
+		if (SH.isnt(query))
+			return;
+		AmiCenterQueryDsRequest request = prepareRequest();
+		if (request == null)
+			return;
+		request.setQuery(query);
+		request.setQuerySessionId(this.sessionId);
+		service.sendRequestToBackend(this, request);
 	}
 
 }

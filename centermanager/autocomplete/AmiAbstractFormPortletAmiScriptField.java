@@ -69,9 +69,8 @@ public class AmiAbstractFormPortletAmiScriptField extends FormPortletTextEditFie
 	//private AmiWebScriptManagerForLayout scriptManager; //declared in sub-class
 
 	//add
-	private int selStart;
-	private int selEnd;
-	private boolean pendingSelection;
+	private String autoCompleteMethodName;
+	private Class[] autoCompleteVarType;
 
 	public AmiAbstractFormPortletAmiScriptField(String title, PortletManager manager) {
 		super(String.class, title);
@@ -210,7 +209,16 @@ public class AmiAbstractFormPortletAmiScriptField extends FormPortletTextEditFie
 		new JsFunction(pendingJs, jsObjectName, "setKeyboardHandler").addParamQuoted(amiEditorKeyboard).end();
 		new JsFunction(pendingJs, jsObjectName, "updateHighlight").addParam(this.curHighlightedRow).end();
 		//add
-		new JsFunction(pendingJs, jsObjectName, "selectFuncParam").end();
+		//********************
+		if (this.autoCompleteMethodName != null && this.autoCompleteVarType != null) {
+			JsFunction js = new JsFunction(pendingJs, jsObjectName, "registerMethodAutoComplete").addParamQuoted(this.autoCompleteMethodName);//.addParamQuoted(param).end();
+			for (Class<?> clzz : this.autoCompleteVarType)
+				js.addParamQuoted(clzz.getSimpleName());
+			js.end();
+		}
+
+		//********************
+
 		cursonPositionMoved = false;
 		if (shouldScroll) {
 			new JsFunction(pendingJs, jsObjectName, "scrollToLine").addParam(this.curScrolledRow).end();
@@ -392,10 +400,9 @@ public class AmiAbstractFormPortletAmiScriptField extends FormPortletTextEditFie
 	@Override
 	public void onAutoComplete(ParamsDefinition params) {
 		System.out.println("doing autocomplete");
+		this.autoCompleteMethodName = params.getMethodName();
+		this.autoCompleteVarType = params.getParamTypes();
 
-		//int nuwCursorPos = this.getCursorPosition()
-		this.setCursorPosition(7);
-		this.setAnnotation(0, "abc", "abc");
 		fireConfigChanged();
 
 	}
