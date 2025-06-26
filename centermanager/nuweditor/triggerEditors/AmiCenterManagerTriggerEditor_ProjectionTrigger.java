@@ -1,14 +1,26 @@
 
 package com.f1.ami.web.centermanager.nuweditor.triggerEditors;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
+import com.f1.ami.amicommon.msg.AmiCenterQueryDsResponse;
 import com.f1.ami.web.AmiWebMenuUtils;
+import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
+import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors.AmiCenterManagerTriggerEditor_ProjectionSelectEditor;
+import com.f1.base.Action;
+import com.f1.base.Row;
+import com.f1.base.Table;
+import com.f1.container.ResultMessage;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenuLink;
@@ -26,17 +38,24 @@ import com.f1.utils.SH;
 
 public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterManagerAbstractTriggerEditor
 		implements FormPortletListener, FormPortletContextMenuFactory, FormPortletContextMenuListener {
-	private static final int FORM_LEFT_POSITION = 120;
+	private static final int FORM_LEFT_POSITION = 100;
 	private static final int FORM_WIDTH = 550;
 	private static final int FORM_HEIGHT = 300;
 
 	final private FormPortletCheckboxField allowExternalUpdateField;
 	final private FormPortletTextField wheresField;
 	final private AmiCenterManagerTriggerEditor_ProjectionSelectEditor selectsEditor;
+	final private AmiWebService service;
+
+	private String targetTable;
+	private List<String> sourceTables;
+
+	private Set<String>[] sourceTableColumns;
+	private Set<String> targetTableColumns;
 
 	public AmiCenterManagerTriggerEditor_ProjectionTrigger(PortletConfig config) {
 		super(config);
-
+		service = AmiWebUtils.getService(getManager());
 		allowExternalUpdateField = form.addField(new FormPortletCheckboxField("allowExternalUpdates"));
 		allowExternalUpdateField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
 				+ "If true, then other processes (i.e triggers, UPDATEs) are allowed to perform UPDATEs on the target table." + "<br>"
@@ -48,25 +67,8 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 		wheresField.setHelp("A comma-delimited list of boolean expressions that must all be true on a source table's row in order for it to be projected into the target table:"
 				+ "<br>" + "<b><i style=\"color:blue\">expression_on_sourceTableColumns,[ expression_on_sourceTableColumns ...]</i></b>");
 		wheresField.setHasButton(true);
-		wheresField.setCorrelationData(new Formula() {
 
-			@Override
-			public void onContextMenu(FormPortletField field, String action) {
-				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
-
-			}
-
-			@Override
-			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-				BasicWebMenu r = new BasicWebMenu();
-				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
-				WebMenu variables = createVariablesMenu("Variables", CH.s("account", "region", "qty", "px"));
-				r.add(variables);
-				return r;
-			}
-		});
-
-		selectsEditor = new AmiCenterManagerTriggerEditor_ProjectionSelectEditor(generateConfig());
+		selectsEditor = new AmiCenterManagerTriggerEditor_ProjectionSelectEditor(generateConfig(), this);
 		addChild(form, 0, 0, 1, 1);
 		addChild(selectsEditor, 0, 1, 1, 1);
 		setRowSize(0, 150);
@@ -140,6 +142,146 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 	public void onSpecialKeyPressed(FormPortlet formPortlet, FormPortletField<?> field, int keycode, int mask, int cursorPosition) {
 		// TODO Auto-generated method stub
 
+	}
+	public void setSourceTable(List<String> source) {
+		this.sourceTables = source;
+		int sourceTableSize = source.size();
+		this.sourceTableColumns = new LinkedHashSet[sourceTableSize];
+		for (int i = 0; i < source.size(); i++)
+			sendQueryToBackend("SELECT ColumnName FROM SHOW COLUMNS WHERE TableName==\"" + source.get(i) + "\";//index" + i + "source");
+	}
+
+	public void setTargetTable(String target) {
+		this.targetTable = target;
+		sendQueryToBackend("SELECT ColumnName FROM SHOW COLUMNS WHERE TableName==\"" + targetTable + "\";//target");
+
+	}
+
+	public List<String> getSourceTables() {
+		return this.sourceTables;
+	}
+
+	public String getTargetTable() {
+		return this.targetTable;
+	}
+
+	public void resetDependency() {
+		this.sourceTables = null;
+		this.targetTable = null;
+	}
+
+	public Set<String>[] getSourceTableColumns() {
+		return this.sourceTableColumns;
+	}
+
+	public Set<String> getTargetTableColumns() {
+		return this.targetTableColumns;
+	}
+	//The abilities to query the backend
+	@Override
+	public void onBackendResponse(ResultMessage<Action> result) {
+		if (result.getError() != null) {
+			getManager().showAlert("Internal Error:" + result.getError().getMessage(), result.getError());
+			return;
+		}
+		Action a = result.getRequestMessage().getAction();
+		String query = null;
+		if (a instanceof AmiCenterQueryDsRequest) {
+			AmiCenterQueryDsRequest request = (AmiCenterQueryDsRequest) a;
+			query = request.getQuery();
+		}
+		AmiCenterQueryDsResponse response = (AmiCenterQueryDsResponse) result.getAction();
+		if (response.getOk() && response.getTables().size() == 1) {
+			Table t = response.getTables().get(0);
+			if (query.endsWith("source")) {
+				Integer index = -1;
+				Pattern pattern = Pattern.compile("index(\\d+)source");
+				Matcher matcher = pattern.matcher(query);
+				if (matcher.find()) {
+					index = Integer.parseInt(matcher.group(1));
+				} else
+					throw new NullPointerException();
+				Set<String> sourceColumnsAtThisIndex = new LinkedHashSet<String>();
+				for (Row r : t.getRows())
+					sourceColumnsAtThisIndex.add((String) r.get("ColumnName"));
+				sourceTableColumns[index] = sourceColumnsAtThisIndex;
+				this.selectsEditor.onSourceTableColumnsChanged();
+				//update dependency for wheres field
+				wheresField.setCorrelationData(new Formula() {
+
+					@Override
+					public void onContextMenu(FormPortletField field, String action) {
+						AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
+
+					}
+
+					@Override
+					public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
+						BasicWebMenu r = new BasicWebMenu();
+						AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
+						//1. Table Names: [source0, source1, ..., target]
+						WebMenu tableNames = new BasicWebMenu("Table Names", true);
+						//source table
+						List<String> sourceTableNamesSorted = CH.sort(sourceTables, SH.COMPARATOR_CASEINSENSITIVE_STRING);
+						for (int i = 0; i < sourceTableNamesSorted.size(); i++) {
+							String tableName = sourceTableNamesSorted.get(i);
+							tableNames.add(new BasicWebMenuLink(tableName + "&nbsp;&nbsp;&nbsp;<i>Source Table </i>" + i, true, "var_" + tableName).setAutoclose(false)
+									.setCssStyle("_fm=courier"));
+						}
+						//target table
+						tableNames.add(new BasicWebMenuLink(targetTable + "&nbsp;&nbsp;&nbsp;<i>Target Table </i>", true, "var_" + targetTable).setAutoclose(false)
+								.setCssStyle("_fm=courier"));
+						r.add(tableNames);
+
+						//2. Source i Column Names 
+						for (int i = 0; i < sourceTableColumns.length; i++) {
+							WebMenu columnNames = new BasicWebMenu("Source " + i + " Column Names", true);
+							Set<String> columnNamesAtThisIndex = sourceTableColumns[i];
+							for (String col : columnNamesAtThisIndex)
+								columnNames.add(new BasicWebMenuLink(col, true, "var_" + col).setAutoclose(false).setCssStyle("_fm=courier"));
+							r.add(columnNames);
+						}
+
+						return r;
+					}
+				});
+
+			} else if (query.endsWith("target")) {
+				this.targetTableColumns = new LinkedHashSet<String>();
+				for (Row r : t.getRows())
+					this.targetTableColumns.add((String) r.get("ColumnName"));
+				this.selectsEditor.onTargetTableColumnsChanged();
+			}
+
+		}
+	}
+
+	public AmiCenterQueryDsRequest prepareRequest() {
+		AmiCenterQueryDsRequest request = getManager().getTools().nw(AmiCenterQueryDsRequest.class);
+
+		request.setLimit(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_LIMIT);
+		request.setTimeoutMs(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_TIMEOUT);
+		request.setQuerySessionKeepAlive(true);
+		request.setIsTest(false);
+		request.setAllowSqlInjection(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_ALLOW_SQL_INJECTION);
+		request.setInvokedBy(service.getUserName());
+		request.setSessionVariableTypes(null);
+		request.setSessionVariables(null);
+		request.setPermissions(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PERMISSION);
+		request.setType(AmiCenterQueryDsRequest.TYPE_QUERY);
+		request.setOriginType(AmiCenterQueryDsRequest.ORIGIN_FRONTEND_SHELL);
+		request.setDatasourceName(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_DS_NAME);
+		return request;
+	}
+
+	protected void sendQueryToBackend(String query) {
+		if (SH.isnt(query))
+			return;
+		AmiCenterQueryDsRequest request = prepareRequest();
+		if (request == null)
+			return;
+		request.setQuery(query);
+		service.sendRequestToBackend(this, request);
 	}
 
 }

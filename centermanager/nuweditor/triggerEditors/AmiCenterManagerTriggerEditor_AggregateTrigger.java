@@ -1,11 +1,23 @@
 package com.f1.ami.web.centermanager.nuweditor.triggerEditors;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
+import com.f1.ami.amicommon.msg.AmiCenterQueryDsResponse;
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
+import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
+import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors.AmiCenterManagerTriggerEditor_AggregateGroupByEditor;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors.AmiCenterManagerTriggerEditor_AggregateSelectEditor;
+import com.f1.base.Action;
+import com.f1.base.Row;
+import com.f1.base.Table;
+import com.f1.container.ResultMessage;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
+import com.f1.utils.SH;
 
 public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterManagerAbstractTriggerEditor {
 	/*strcture:
@@ -21,7 +33,13 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 	final private FormPortletCheckboxField allowExternalUpdateField;
 
 	final private AmiCenterManagerTriggerEditor_AggregateGroupByEditor groupByEditor;
-	final private AmiCenterManagerTriggerEditor_AggregateSelectEditor selectEditor;
+	final private AmiCenterManagerTriggerEditor_AggregateSelectEditor selectsEditor;
+
+	private String sourceTable;
+	private String targetTable;
+
+	private Set<String> sourceTableColumns;
+	private Set<String> targetTableColumns;
 
 	public AmiCenterManagerTriggerEditor_AggregateTrigger(PortletConfig config) {
 		super(config);
@@ -32,29 +50,126 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 				+ "If true, then other processes (i.e triggers, UPDATEs) are allowed to perform UPDATEs on the target table." + "<br>"
 				+ " Please use precaution when using this feature, since updating cells controlled by the aggregate trigger will result into an undesirable state.");
 
-		this.groupByEditor = new AmiCenterManagerTriggerEditor_AggregateGroupByEditor(generateConfig());
-		this.selectEditor = new AmiCenterManagerTriggerEditor_AggregateSelectEditor(generateConfig());
+		this.groupByEditor = new AmiCenterManagerTriggerEditor_AggregateGroupByEditor(generateConfig(), this);
+		this.selectsEditor = new AmiCenterManagerTriggerEditor_AggregateSelectEditor(generateConfig(), this);
 
 		addChild(form, 0, 0);
 		addChild(groupByEditor, 0, 1, 1, 1);
-		addChild(selectEditor, 0, 2, 1, 1);
+		addChild(selectsEditor, 0, 2, 1, 1);
 		setRowSize(0, 100);
-		//addChild(new FormPortlet(generateConfig()), 0, 1, 1, 1);
-		//addChild(this.groupByEditor, 0, 1, 1, 1);
-		//
-		//addChild(this.selectEditor, 0, 2, 1, 1);
-
-		//addChild(groupByEditor, 0, 1);
-		//		GridPortlet smartEditorGrid = new GridPortlet(generateConfig());
-		//		smartEditorGrid.addChild(groupByEditor, 0, 0);
-		//		smartEditorGrid.addChild(selectEditor, 0, 1);
 
 	}
 
 	@Override
 	public String getKeyValuePairs() {
-		// TODO Auto-generated method stub
-		return null;
+		StringBuilder sb = new StringBuilder();
+		if (SH.is(groupByEditor.getOutput()))
+			sb.append(" groupBys = ").append(SH.doubleQuote(groupByEditor.getOutput()));
+		else
+			sb.append(" groupBys = ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
+
+		if (SH.is(selectsEditor.getOutput()))
+			sb.append(" selects = ").append(SH.doubleQuote(selectsEditor.getOutput()));
+		else
+			sb.append(" selects = ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
+
+		if (allowExternalUpdateField.getBooleanValue())
+			sb.append(" allowExternalUpdate = ").append(SH.doubleQuote("true"));
+		return sb.toString();
+	}
+
+	public void setSourceTable(String src) {
+		this.sourceTable = src;
+		sendQueryToBackend("SELECT ColumnName FROM SHOW COLUMNS WHERE TableName==\"" + this.sourceTable + "\";//source");
+	}
+
+	public void setTargetTable(String tgt) {
+		this.targetTable = tgt;
+		sendQueryToBackend("SELECT ColumnName FROM SHOW COLUMNS WHERE TableName==\"" + this.targetTable + "\";//target");
+
+	}
+
+	public void resetDependency() {
+		this.sourceTable = null;
+		this.targetTable = null;
+		this.sourceTableColumns = null;
+		this.targetTableColumns = null;
+	}
+
+	public String getSourceTable() {
+		return this.sourceTable;
+	}
+
+	public String getTargetTable() {
+		return this.targetTable;
+	}
+
+	public Set<String> getTargetTableColumns() {
+		return this.targetTableColumns;
+	}
+
+	public Set<String> getSourceTableColumns() {
+		return this.sourceTableColumns;
+	}
+
+	//The abilities to query the backend
+	@Override
+	public void onBackendResponse(ResultMessage<Action> result) {
+		if (result.getError() != null) {
+			getManager().showAlert("Internal Error:" + result.getError().getMessage(), result.getError());
+			return;
+		}
+		Action a = result.getRequestMessage().getAction();
+		String query = null;
+		if (a instanceof AmiCenterQueryDsRequest) {
+			AmiCenterQueryDsRequest request = (AmiCenterQueryDsRequest) a;
+			query = request.getQuery();
+		}
+		AmiCenterQueryDsResponse response = (AmiCenterQueryDsResponse) result.getAction();
+		if (response.getOk() && response.getTables().size() == 1) {
+			Table t = response.getTables().get(0);
+			if (query.endsWith("//source")) {
+				this.sourceTableColumns = new LinkedHashSet<String>();
+				for (Row r : t.getRows())
+					this.sourceTableColumns.add((String) r.get("ColumnName"));
+				this.groupByEditor.onSourceTableColumnsChanged();
+				this.selectsEditor.onSourceTableColumnsChanged();
+			} else if (query.endsWith("//target")) {
+				this.targetTableColumns = new LinkedHashSet<String>();
+				for (Row r : t.getRows())
+					this.targetTableColumns.add((String) r.get("ColumnName"));
+				this.groupByEditor.onTargetTableColumnsChanged();
+				this.selectsEditor.onTargetTableColumnsChanged();
+			}
+		}
+	}
+
+	public AmiCenterQueryDsRequest prepareRequest() {
+		AmiCenterQueryDsRequest request = getManager().getTools().nw(AmiCenterQueryDsRequest.class);
+
+		request.setLimit(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_LIMIT);
+		request.setTimeoutMs(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_TIMEOUT);
+		request.setQuerySessionKeepAlive(true);
+		request.setIsTest(false);
+		request.setAllowSqlInjection(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_ALLOW_SQL_INJECTION);
+		request.setInvokedBy(service.getUserName());
+		request.setSessionVariableTypes(null);
+		request.setSessionVariables(null);
+		request.setPermissions(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_PERMISSION);
+		request.setType(AmiCenterQueryDsRequest.TYPE_QUERY);
+		request.setOriginType(AmiCenterQueryDsRequest.ORIGIN_FRONTEND_SHELL);
+		request.setDatasourceName(AmiCenterManagerSubmitEditScriptPortlet.DEFAULT_DS_NAME);
+		return request;
+	}
+
+	protected void sendQueryToBackend(String query) {
+		if (SH.isnt(query))
+			return;
+		AmiCenterQueryDsRequest request = prepareRequest();
+		if (request == null)
+			return;
+		request.setQuery(query);
+		service.sendRequestToBackend(this, request);
 	}
 
 }

@@ -1,12 +1,11 @@
 package com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.f1.ami.web.AmiWebMenuUtils;
 import com.f1.ami.web.AmiWebUtils;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AggregateTrigger;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenuLink;
@@ -27,6 +26,7 @@ import com.f1.utils.CH;
 import com.f1.utils.SH;
 
 public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPortlet implements FormPortletListener, FormPortletContextMenuFactory, FormPortletContextMenuListener {
+	public static final Set<String> SUPPORTED_FUNC = CH.s("count", "countUnique", "first", "last", "max", "min", "stdev", "stdevs", "sum", "var");
 	private FormPortletTitleField selectTitleField;
 
 	public StringBuilder selectOutput = new StringBuilder();
@@ -40,8 +40,7 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 	final private FormPortletButtonField addButton;
 	final private FormPortletButtonField clearButton;
 
-	private List<FormPortletSelectField<String>> targetColumns;
-	private List<FormPortletSelectField<String>> sourceColumns;
+	private AmiCenterManagerTriggerEditor_AggregateTrigger owner;
 
 	private static final int COLNAME_WIDTH = 150; //60
 	private static final int DEFAULT_ROWHEIGHT = 25;
@@ -50,11 +49,9 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 	private static final int DEFAULT_TITLEHEIGHT = 27;
 	private static final int DEFAULT_TOPPOS = DEFAULT_SPACING + DEFAULT_TITLEHEIGHT;
 
-	public AmiCenterManagerTriggerEditor_AggregateSelectEditor(PortletConfig config) {
+	public AmiCenterManagerTriggerEditor_AggregateSelectEditor(PortletConfig config, AmiCenterManagerTriggerEditor_AggregateTrigger owner) {
 		super(config);
-
-		this.targetColumns = new ArrayList<FormPortletSelectField<String>>();
-		this.sourceColumns = new ArrayList<FormPortletSelectField<String>>();
+		this.owner = owner;
 		this.selectTitleField = this.addField(new FormPortletTitleField("selects"));
 		this.selectTitleField.setLeftPosPx(400);
 		this.selectTitleField.setHelp("A comma delimited list of expressions on how to populate target columns from source columns, each expression being of the form:" + "<br>"
@@ -67,23 +64,11 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 		sourceTitleDiv.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 48).setTopPosPx(DEFAULT_TOPPOS).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(200);
 
 		targetColumnField = this.addField(new FormPortletSelectField(String.class, ""));
-		targetColumnField.addOption("act", "act");
-		targetColumnField.addOption("region", "region");
-		targetColumnField.addOption("cnt", "cnt");
-		targetColumnField.addOption("value", "value");
 
 		aggFuncField = this.addField(new FormPortletSelectField(String.class, "<b>=</b>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp "));
 		//count, countUnique, first, last, max, min, stdev, stdevs, sum
-		aggFuncField.addOption("count", "count");
-		aggFuncField.addOption("countUnique", "countUnique");
-		aggFuncField.addOption("first", "first");
-		aggFuncField.addOption("last", "last");
-		aggFuncField.addOption("max", "max");
-		aggFuncField.addOption("min", "min");
-		aggFuncField.addOption("stdev", "stdev");
-		aggFuncField.addOption("stdevs", "stdevs");
-		aggFuncField.addOption("sum", "sum");
-		aggFuncField.addOption("var", "var");
+		for (String func : SUPPORTED_FUNC)
+			aggFuncField.addOption(func, func);
 
 		targetColumnField.setWidthPx(COLNAME_WIDTH);
 		targetColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
@@ -98,24 +83,6 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 
 		aggExpressionField = this.addField(new FormPortletTextField("( &nbsp"));
 		aggExpressionField.setHasButton(true);
-		aggExpressionField.setCorrelationData(new AmiAggregateTriggerSelectFormula() {
-
-			@Override
-			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-				BasicWebMenu r = new BasicWebMenu();
-				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
-				//TODO:sub this with real values
-				WebMenu variables = createVariablesMenu("Variables", CH.s("account", "region", "qty", "px"));
-				r.add(variables);
-				return r;
-			}
-
-			@Override
-			public void onContextMenu(FormPortletField field, String action) {
-				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
-
-			}
-		});
 		aggExpressionField.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 140).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(145);
 
 		this.addButton = this.addField(new FormPortletButtonField(") &nbsp").setValue("Add"));
@@ -126,7 +93,7 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 		this.clearButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 390).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
 
 		this.outputField = this.addField(new FormPortletTextAreaField("Output"));
-		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 3).setWidthPx(600);
+		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
 
 		this.addFormPortletListener(this);
 		this.addMenuListener(this);
@@ -169,21 +136,21 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 
 	}
 
-	public static interface AmiAggregateTriggerSelectFormula {
+	public static interface Formula {
 		public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition);
 		public void onContextMenu(FormPortletField field, String action);
 	}
 
 	@Override
 	public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-		AmiAggregateTriggerSelectFormula t = (AmiAggregateTriggerSelectFormula) field.getCorrelationData();
+		Formula t = (Formula) field.getCorrelationData();
 		return t.createMenu(formPortlet, field, cursorPosition);
 	}
 
 	@Override
 	public void onContextMenu(FormPortlet portlet, String action, FormPortletField field) {
 		if (field == aggExpressionField) {
-			AmiAggregateTriggerSelectFormula cb = (AmiAggregateTriggerSelectFormula) field.getCorrelationData();
+			Formula cb = (Formula) field.getCorrelationData();
 			cb.onContextMenu(field, action);
 		}
 	}
@@ -201,5 +168,44 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 	public void clearSelectClause() {
 		this.selectOutput.setLength(0);
 		this.outputField.setValue("");
+	}
+
+	public String getOutput() {
+		return this.outputField.getValue();
+	}
+
+	public void onSourceTableColumnsChanged() {
+		aggExpressionField.setCorrelationData(new Formula() {
+
+			@Override
+			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
+				BasicWebMenu r = new BasicWebMenu();
+				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
+				//TODO:sub this with real values
+				//WebMenu variables = createVariablesMenu("Variables", CH.s("account", "region", "qty", "px"));
+				WebMenu variables = createVariablesMenu("Variables", owner.getSourceTableColumns());
+				r.add(variables);
+				return r;
+			}
+
+			@Override
+			public void onContextMenu(FormPortletField field, String action) {
+				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
+
+			}
+		});
+	}
+
+	public void onTargetTableColumnsChanged() {
+		targetColumnField.clearOptions();
+		Set<String> targetTableColumns = owner.getTargetTableColumns();
+		if (targetTableColumns != null) {
+			for (String col : targetTableColumns)
+				targetColumnField.addOption(col, col);
+		}
+		//		targetColumnField.addOption("act", "act");
+		//		targetColumnField.addOption("region", "region");
+		//		targetColumnField.addOption("cnt", "cnt");
+		//		targetColumnField.addOption("value", "value");
 	}
 }

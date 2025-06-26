@@ -1,5 +1,9 @@
 package com.f1.ami.web.centermanager.nuweditor;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -12,7 +16,7 @@ import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerAbs
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AggregateTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Amiscirpt;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Decorate;
-import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Join;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_JoinTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_ProjectionTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Relay;
 import com.f1.ami.web.graph.AmiCenterGraphNode;
@@ -53,7 +57,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 	final private AmiCenterManagerTriggerEditor_Amiscirpt amiscriptEditor;
 	final private AmiCenterManagerTriggerEditor_AggregateTrigger aggEditor;
 	final private AmiCenterManagerTriggerEditor_ProjectionTrigger projectionEditor;
-	final private AmiCenterManagerTriggerEditor_Join joinEditor;
+	final private AmiCenterManagerTriggerEditor_JoinTrigger joinEditor;
 	final private AmiCenterManagerTriggerEditor_Decorate decorateEditor;
 	final private AmiCenterManagerTriggerEditor_Relay relayEditor;
 
@@ -69,7 +73,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		this.getManager().onPortletAdded(aggEditor);
 		projectionEditor = new AmiCenterManagerTriggerEditor_ProjectionTrigger(generateConfig());
 		this.getManager().onPortletAdded(projectionEditor);
-		joinEditor = new AmiCenterManagerTriggerEditor_Join(generateConfig());
+		joinEditor = new AmiCenterManagerTriggerEditor_JoinTrigger(generateConfig());
 		this.getManager().onPortletAdded(joinEditor);
 		decorateEditor = new AmiCenterManagerTriggerEditor_Decorate(generateConfig());
 		this.getManager().onPortletAdded(decorateEditor);
@@ -176,7 +180,37 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 			short type = this.triggerTypeField.getValue();
 			updateTriggerTemplate(type);
 		} else if (field == this.triggerOnField) {
-			System.out.println(field.getValue());
+			LinkedHashSet<String> onNames = ((FormPortletMultiCheckboxField) field).getValue();
+			String[] namesArr = onNames.toArray(new String[0]);
+			switch (this.triggerTypeField.getValue()) {
+				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_JOIN:
+					if (namesArr.length == 3) {
+						String leftTable = namesArr[0];
+						String rightTable = namesArr[1];
+						String resultTable = namesArr[2];
+						joinEditor.setLeftTable(leftTable);
+						joinEditor.setRightTable(rightTable);
+						joinEditor.setResultTable(resultTable);
+					} else
+						joinEditor.resetDependency();
+					break;
+				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AGGREGATE:
+					if (namesArr.length == 2) {
+						String sourceTable = namesArr[0];
+						String targetTable = namesArr[1];
+						aggEditor.setSourceTable(sourceTable);
+						aggEditor.setTargetTable(targetTable);
+					} else
+						aggEditor.resetDependency();
+				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_PROJECTION:
+					if (namesArr.length >= 2) {
+						List<String> sourceTables = new ArrayList<>(Arrays.asList(namesArr).subList(0, namesArr.length - 1));
+						String targetTable = (String) namesArr[namesArr.length - 1];
+						projectionEditor.setSourceTable(sourceTables);
+						projectionEditor.setTargetTable(targetTable);
+					} else
+						projectionEditor.resetDependency();
+			}
 		}
 
 	}

@@ -5,7 +5,6 @@ import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
-import com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors.AmiCenterManagerTriggerEditor_AggregateGroupByEditor;
 import com.f1.base.Action;
 import com.f1.container.ResultMessage;
 import com.f1.suite.web.portal.PortletConfig;
@@ -100,8 +99,6 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 			getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerScriptExportPortlet(generateConfig(), this));
 		} else if (button == this.submitButton) {
 			//getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerTriggerEditor_SelectEditor(generateConfig()), 800, 750);
-
-			getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerTriggerEditor_AggregateGroupByEditor(generateConfig()), 800, 750);
 		}
 
 	}

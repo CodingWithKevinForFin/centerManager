@@ -3,7 +3,9 @@ package com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AggregateTrigger;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenu;
 import com.f1.suite.web.portal.PortletConfig;
@@ -34,6 +36,8 @@ public class AmiCenterManagerTriggerEditor_AggregateGroupByEditor extends FormPo
 	private List<FormPortletSelectField<String>> targetColumns;
 	private List<FormPortletSelectField<String>> sourceColumns;
 
+	private AmiCenterManagerTriggerEditor_AggregateTrigger owner;
+
 	private static final int COLNAME_WIDTH = 200; //60
 	private static final int DEFAULT_ROWHEIGHT = 25;
 	private static final int DEFAULT_LEFTPOS = 80; //164
@@ -41,9 +45,9 @@ public class AmiCenterManagerTriggerEditor_AggregateGroupByEditor extends FormPo
 	private static final int DEFAULT_TITLEHEIGHT = 27;
 	private static final int DEFAULT_TOPPOS = DEFAULT_SPACING + DEFAULT_TITLEHEIGHT;
 
-	public AmiCenterManagerTriggerEditor_AggregateGroupByEditor(PortletConfig config) {
+	public AmiCenterManagerTriggerEditor_AggregateGroupByEditor(PortletConfig config, AmiCenterManagerTriggerEditor_AggregateTrigger owner) {
 		super(config);
-
+		this.owner = owner;
 		this.targetColumns = new ArrayList<FormPortletSelectField<String>>();
 		this.sourceColumns = new ArrayList<FormPortletSelectField<String>>();
 		this.groupByTitleField = this.addField(new FormPortletTitleField("groupBy"));
@@ -58,16 +62,7 @@ public class AmiCenterManagerTriggerEditor_AggregateGroupByEditor extends FormPo
 		sourceTitleDiv.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 48).setTopPosPx(DEFAULT_TOPPOS).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(200);
 
 		targetColumnField = this.addField(new FormPortletSelectField(String.class, ""));
-		targetColumnField.addOption("act", "act");
-		targetColumnField.addOption("region", "region");
-		targetColumnField.addOption("cnt", "cnt");
-		targetColumnField.addOption("value", "value");
-
 		sourceColumnField = this.addField(new FormPortletSelectField(String.class, "&nbsp&nbsp<b>=</b>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp "));
-		sourceColumnField.addOption("account", "account");
-		sourceColumnField.addOption("region", "region");
-		sourceColumnField.addOption("qty", "qty");
-		sourceColumnField.addOption("px", "px");
 
 		targetColumnField.setWidthPx(COLNAME_WIDTH);
 		targetColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
@@ -88,47 +83,10 @@ public class AmiCenterManagerTriggerEditor_AggregateGroupByEditor extends FormPo
 		this.clearButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 320).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
 
 		this.outputField = this.addField(new FormPortletTextAreaField("Output"));
-		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 3).setWidthPx(600);
+		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
 
 		this.addFormPortletListener(this);
 
-	}
-
-	public void addGroupByFieldAtPos(int pos) {
-		FormPortletSelectField<String> targetColumnField = new FormPortletSelectField(String.class, "");
-		targetColumnField.addOption("test", "test");
-		targetColumnField.addOption("test1", "test1");
-		targetColumnField.addOption("test2", "test2");
-
-		FormPortletSelectField<String> sourceColumnField = new FormPortletSelectField(String.class, "&nbsp&nbsp<b>=</b>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp ");
-		sourceColumnField.addOption("test", "test");
-		sourceColumnField.addOption("test1", "test1");
-		sourceColumnField.addOption("test2", "test2");
-
-		targetColumns.add(pos, targetColumnField);
-
-		sourceColumns.add(pos, sourceColumnField);
-
-		//Order of fields being added changes if you can select a field.
-		this.addField(targetColumnField);
-		this.addField(sourceColumnField);
-
-	}
-
-	private void repositionAtPosition(int position) {
-		FormPortletSelectField targetColumnField = this.targetColumns.get(position);
-		FormPortletSelectField sourceColumnField = this.sourceColumns.get(position);
-
-		targetColumnField.setWidthPx(COLNAME_WIDTH);
-		targetColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
-		targetColumnField.setLeftPosPx(DEFAULT_LEFTPOS);
-		targetColumnField.setTopPosPx(DEFAULT_TOPPOS * 2 + (DEFAULT_ROWHEIGHT + DEFAULT_SPACING) * position);
-
-		sourceColumnField.setWidthPx(COLNAME_WIDTH);
-		sourceColumnField.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS);
-		sourceColumnField.setTopPosPx(DEFAULT_TOPPOS * 2 + (DEFAULT_ROWHEIGHT + DEFAULT_SPACING) * position);
-		sourceColumnField.setRightPosPx(50);
-		sourceColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
 	}
 
 	@Override
@@ -177,6 +135,37 @@ public class AmiCenterManagerTriggerEditor_AggregateGroupByEditor extends FormPo
 	public void clearGroupByClause() {
 		this.groupByOutput.setLength(0);
 		this.outputField.setValue("");
+	}
+
+	public String getOutput() {
+		return outputField.getValue();
+	}
+
+	public void onTargetTableColumnsChanged() {
+		targetColumnField.clearOptions();
+		Set<String> targetTableColumns = owner.getTargetTableColumns();
+		if (targetTableColumns != null) {
+			for (String col : targetTableColumns)
+				targetColumnField.addOption(col, col);
+		}
+		//		targetColumnField.addOption("act", "act");
+		//		targetColumnField.addOption("region", "region");
+		//		targetColumnField.addOption("cnt", "cnt");
+		//		targetColumnField.addOption("value", "value");
+	}
+
+	public void onSourceTableColumnsChanged() {
+		sourceColumnField.clearOptions();
+		Set<String> sourceTableColumns = owner.getSourceTableColumns();
+		if (sourceTableColumns != null) {
+			for (String col : sourceTableColumns)
+				sourceColumnField.addOption(col, col);
+		}
+
+		//		sourceColumnField.addOption("account", "account");
+		//		sourceColumnField.addOption("region", "region");
+		//		sourceColumnField.addOption("qty", "qty");
+		//		sourceColumnField.addOption("px", "px");
 	}
 
 }

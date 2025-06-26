@@ -7,6 +7,7 @@ import java.util.Set;
 
 import com.f1.ami.web.AmiWebMenuUtils;
 import com.f1.ami.web.AmiWebUtils;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_ProjectionTrigger;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenuLink;
@@ -43,6 +44,8 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 	private List<FormPortletSelectField<String>> targetColumns;
 	private List<FormPortletSelectField<String>> sourceColumns;
 
+	private AmiCenterManagerTriggerEditor_ProjectionTrigger owner;
+
 	private static final int COLNAME_WIDTH = 200; //60
 	private static final int DEFAULT_ROWHEIGHT = 25;
 	private static final int DEFAULT_LEFTPOS = 80; //164
@@ -50,9 +53,9 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 	private static final int DEFAULT_TITLEHEIGHT = 27;
 	private static final int DEFAULT_TOPPOS = DEFAULT_SPACING + DEFAULT_TITLEHEIGHT;
 
-	public AmiCenterManagerTriggerEditor_ProjectionSelectEditor(PortletConfig config) {
+	public AmiCenterManagerTriggerEditor_ProjectionSelectEditor(PortletConfig config, AmiCenterManagerTriggerEditor_ProjectionTrigger owner) {
 		super(config);
-
+		this.owner = owner;
 		this.targetColumns = new ArrayList<FormPortletSelectField<String>>();
 		this.sourceColumns = new ArrayList<FormPortletSelectField<String>>();
 		this.selectTitleField = this.addField(new FormPortletTitleField("selects"));
@@ -67,10 +70,6 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 		sourceTitleDiv.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 48).setTopPosPx(DEFAULT_TOPPOS).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(200);
 
 		targetColumnField = this.addField(new FormPortletSelectField(String.class, ""));
-		targetColumnField.addOption("act", "act");
-		targetColumnField.addOption("region", "region");
-		targetColumnField.addOption("cnt", "cnt");
-		targetColumnField.addOption("value", "value");
 
 		targetColumnField.setWidthPx(COLNAME_WIDTH);
 		targetColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
@@ -79,26 +78,6 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 
 		selectExpressionField = this.addField(new FormPortletTextField(""));
 		selectExpressionField.setHasButton(true);
-		selectExpressionField.setCorrelationData(new AmiTriggerSelectFormula() {
-
-			@Override
-			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-				BasicWebMenu r = new BasicWebMenu();
-				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
-				//TODO:sub this with real values
-				WebMenu variables = createVariablesMenu("Variables", CH.s("account", "region", "qty", "px"));
-				r.add(variables);
-				WebMenu tableNames = createVariablesMenu("Table Names", CH.s("Accounts1", "Accounts2"));
-				r.add(tableNames);
-				return r;
-			}
-
-			@Override
-			public void onContextMenu(FormPortletField field, String action) {
-				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
-
-			}
-		});
 		selectExpressionField.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT)
 				.setWidthPx(COLNAME_WIDTH);
 
@@ -110,7 +89,7 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 		this.clearButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 340).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
 
 		this.outputField = this.addField(new FormPortletTextAreaField("Output"));
-		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 3).setWidthPx(600);
+		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
 
 		this.addFormPortletListener(this);
 		this.addMenuListener(this);
@@ -161,7 +140,9 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 	@Override
 	public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
 		AmiTriggerSelectFormula t = (AmiTriggerSelectFormula) field.getCorrelationData();
-		return t.createMenu(formPortlet, field, cursorPosition);
+		if (t != null)
+			return t.createMenu(formPortlet, field, cursorPosition);
+		return null;
 	}
 
 	@Override
@@ -190,4 +171,61 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 	public String getOutput() {
 		return this.outputField.getValue();
 	}
+
+	public void onTargetTableColumnsChanged() {
+		targetColumnField.clearOptions();
+		Set<String> targetTableColumns = owner.getTargetTableColumns();
+		if (targetTableColumns != null) {
+			for (String col : targetTableColumns)
+				targetColumnField.addOption(col, col);
+		}
+		//		targetColumnField.addOption("act", "act");
+		//		targetColumnField.addOption("region", "region");
+		//		targetColumnField.addOption("cnt", "cnt");
+		//		targetColumnField.addOption("value", "value");
+	}
+
+	public void onSourceTableColumnsChanged() {
+		selectExpressionField.setCorrelationData(new AmiTriggerSelectFormula() {
+
+			@Override
+			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
+				BasicWebMenu r = new BasicWebMenu();
+				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
+
+				//1. Table Names: [source0, source1, ..., target]
+				WebMenu tableNames = new BasicWebMenu("Table Names", true);
+				//source table
+				List<String> sourceTableNamesSorted = CH.sort(owner.getSourceTables(), SH.COMPARATOR_CASEINSENSITIVE_STRING);
+				for (int i = 0; i < sourceTableNamesSorted.size(); i++) {
+					String tableName = sourceTableNamesSorted.get(i);
+					tableNames.add(new BasicWebMenuLink(tableName + "&nbsp;&nbsp;&nbsp;<i>Source Table </i>" + i, true, "var_" + tableName).setAutoclose(false)
+							.setCssStyle("_fm=courier"));
+				}
+				//target table
+				tableNames.add(new BasicWebMenuLink(owner.getTargetTable() + "&nbsp;&nbsp;&nbsp;<i>Target Table </i>", true, "var_" + owner.getTargetTable()).setAutoclose(false)
+						.setCssStyle("_fm=courier"));
+				r.add(tableNames);
+
+				//2. Source i Column Names 
+				for (int i = 0; i < owner.getSourceTableColumns().length; i++) {
+					WebMenu columnNames = new BasicWebMenu("Source " + i + " Column Names", true);
+					Set<String> columnNamesAtThisIndex = owner.getSourceTableColumns()[i];
+					for (String col : columnNamesAtThisIndex)
+						columnNames.add(new BasicWebMenuLink(col, true, "var_" + col).setAutoclose(false).setCssStyle("_fm=courier"));
+					r.add(columnNames);
+				}
+
+				return r;
+			}
+
+			@Override
+			public void onContextMenu(FormPortletField field, String action) {
+				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
+
+			}
+		});
+
+	}
+
 }
