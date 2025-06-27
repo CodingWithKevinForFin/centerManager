@@ -133,7 +133,6 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 				for (Row r : t.getRows())
 					this.sourceTableColumns.add((String) r.get("ColumnName"));
 				this.groupByEditor.onSourceTableColumnsChanged();
-				this.selectsEditor.onSourceTableColumnsChanged();
 			} else if (query.endsWith("//target")) {
 				this.targetTableColumns = new LinkedHashSet<String>();
 				for (Row r : t.getRows())

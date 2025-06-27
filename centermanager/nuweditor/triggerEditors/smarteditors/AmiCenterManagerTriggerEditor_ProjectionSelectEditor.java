@@ -53,7 +53,7 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 	private static final int DEFAULT_TITLEHEIGHT = 27;
 	private static final int DEFAULT_TOPPOS = DEFAULT_SPACING + DEFAULT_TITLEHEIGHT;
 
-	public AmiCenterManagerTriggerEditor_ProjectionSelectEditor(PortletConfig config, AmiCenterManagerTriggerEditor_ProjectionTrigger owner) {
+	public AmiCenterManagerTriggerEditor_ProjectionSelectEditor(PortletConfig config, final AmiCenterManagerTriggerEditor_ProjectionTrigger owner) {
 		super(config);
 		this.owner = owner;
 		this.targetColumns = new ArrayList<FormPortletSelectField<String>>();
@@ -78,6 +78,45 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 
 		selectExpressionField = this.addField(new FormPortletTextField(""));
 		selectExpressionField.setHasButton(true);
+		selectExpressionField.setCorrelationData(new Formula() {
+
+			@Override
+			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
+				BasicWebMenu r = new BasicWebMenu();
+				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
+
+				//1. Table Names: [source0, source1, ..., target]
+				WebMenu tableNames = new BasicWebMenu("Table Names", true);
+				//source table
+				List<String> sourceTableNamesSorted = CH.sort(owner.getSourceTables(), SH.COMPARATOR_CASEINSENSITIVE_STRING);
+				for (int i = 0; i < sourceTableNamesSorted.size(); i++) {
+					String tableName = sourceTableNamesSorted.get(i);
+					tableNames.add(new BasicWebMenuLink(tableName + "&nbsp;&nbsp;&nbsp;<i>Source Table </i>" + i, true, "var_" + tableName).setAutoclose(false)
+							.setCssStyle("_fm=courier"));
+				}
+				//target table
+				tableNames.add(new BasicWebMenuLink(owner.getTargetTable() + "&nbsp;&nbsp;&nbsp;<i>Target Table </i>", true, "var_" + owner.getTargetTable()).setAutoclose(false)
+						.setCssStyle("_fm=courier"));
+				r.add(tableNames);
+
+				//2. Source i Column Names 
+				for (int i = 0; i < owner.getSourceTableColumns().length; i++) {
+					WebMenu columnNames = new BasicWebMenu("Source " + i + " Column Names", true);
+					Set<String> columnNamesAtThisIndex = owner.getSourceTableColumns()[i];
+					for (String col : columnNamesAtThisIndex)
+						columnNames.add(new BasicWebMenuLink(col, true, "var_" + col).setAutoclose(false).setCssStyle("_fm=courier"));
+					r.add(columnNames);
+				}
+
+				return r;
+			}
+
+			@Override
+			public void onContextMenu(FormPortletField field, String action) {
+				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
+
+			}
+		});
 		selectExpressionField.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT)
 				.setWidthPx(COLNAME_WIDTH);
 
@@ -132,14 +171,14 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 
 	}
 
-	public static interface AmiTriggerSelectFormula {
+	public static interface Formula {
 		public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition);
 		public void onContextMenu(FormPortletField field, String action);
 	}
 
 	@Override
 	public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-		AmiTriggerSelectFormula t = (AmiTriggerSelectFormula) field.getCorrelationData();
+		Formula t = (Formula) field.getCorrelationData();
 		if (t != null)
 			return t.createMenu(formPortlet, field, cursorPosition);
 		return null;
@@ -148,7 +187,7 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 	@Override
 	public void onContextMenu(FormPortlet portlet, String action, FormPortletField field) {
 		if (field == selectExpressionField) {
-			AmiTriggerSelectFormula cb = (AmiTriggerSelectFormula) field.getCorrelationData();
+			Formula cb = (Formula) field.getCorrelationData();
 			cb.onContextMenu(field, action);
 		}
 	}
@@ -183,49 +222,6 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 		//		targetColumnField.addOption("region", "region");
 		//		targetColumnField.addOption("cnt", "cnt");
 		//		targetColumnField.addOption("value", "value");
-	}
-
-	public void onSourceTableColumnsChanged() {
-		selectExpressionField.setCorrelationData(new AmiTriggerSelectFormula() {
-
-			@Override
-			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-				BasicWebMenu r = new BasicWebMenu();
-				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
-
-				//1. Table Names: [source0, source1, ..., target]
-				WebMenu tableNames = new BasicWebMenu("Table Names", true);
-				//source table
-				List<String> sourceTableNamesSorted = CH.sort(owner.getSourceTables(), SH.COMPARATOR_CASEINSENSITIVE_STRING);
-				for (int i = 0; i < sourceTableNamesSorted.size(); i++) {
-					String tableName = sourceTableNamesSorted.get(i);
-					tableNames.add(new BasicWebMenuLink(tableName + "&nbsp;&nbsp;&nbsp;<i>Source Table </i>" + i, true, "var_" + tableName).setAutoclose(false)
-							.setCssStyle("_fm=courier"));
-				}
-				//target table
-				tableNames.add(new BasicWebMenuLink(owner.getTargetTable() + "&nbsp;&nbsp;&nbsp;<i>Target Table </i>", true, "var_" + owner.getTargetTable()).setAutoclose(false)
-						.setCssStyle("_fm=courier"));
-				r.add(tableNames);
-
-				//2. Source i Column Names 
-				for (int i = 0; i < owner.getSourceTableColumns().length; i++) {
-					WebMenu columnNames = new BasicWebMenu("Source " + i + " Column Names", true);
-					Set<String> columnNamesAtThisIndex = owner.getSourceTableColumns()[i];
-					for (String col : columnNamesAtThisIndex)
-						columnNames.add(new BasicWebMenuLink(col, true, "var_" + col).setAutoclose(false).setCssStyle("_fm=courier"));
-					r.add(columnNames);
-				}
-
-				return r;
-			}
-
-			@Override
-			public void onContextMenu(FormPortletField field, String action) {
-				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
-
-			}
-		});
-
 	}
 
 }

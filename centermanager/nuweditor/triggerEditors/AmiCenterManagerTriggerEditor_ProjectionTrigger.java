@@ -67,6 +67,43 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 		wheresField.setHelp("A comma-delimited list of boolean expressions that must all be true on a source table's row in order for it to be projected into the target table:"
 				+ "<br>" + "<b><i style=\"color:blue\">expression_on_sourceTableColumns,[ expression_on_sourceTableColumns ...]</i></b>");
 		wheresField.setHasButton(true);
+		wheresField.setCorrelationData(new Formula() {
+
+			@Override
+			public void onContextMenu(FormPortletField field, String action) {
+				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
+			}
+
+			@Override
+			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
+				BasicWebMenu r = new BasicWebMenu();
+				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
+				//1. Table Names: [source0, source1, ..., target]
+				WebMenu tableNames = new BasicWebMenu("Table Names", true);
+				//source table
+				List<String> sourceTableNamesSorted = CH.sort(sourceTables, SH.COMPARATOR_CASEINSENSITIVE_STRING);
+				for (int i = 0; i < sourceTableNamesSorted.size(); i++) {
+					String tableName = sourceTableNamesSorted.get(i);
+					tableNames.add(new BasicWebMenuLink(tableName + "&nbsp;&nbsp;&nbsp;<i>Source Table </i>" + i, true, "var_" + tableName).setAutoclose(false)
+							.setCssStyle("_fm=courier"));
+				}
+				//target table
+				tableNames.add(
+						new BasicWebMenuLink(targetTable + "&nbsp;&nbsp;&nbsp;<i>Target Table </i>", true, "var_" + targetTable).setAutoclose(false).setCssStyle("_fm=courier"));
+				r.add(tableNames);
+
+				//2. Source i Column Names 
+				for (int i = 0; i < sourceTableColumns.length; i++) {
+					WebMenu columnNames = new BasicWebMenu("Source " + i + " Column Names", true);
+					Set<String> columnNamesAtThisIndex = sourceTableColumns[i];
+					for (String col : columnNamesAtThisIndex)
+						columnNames.add(new BasicWebMenuLink(col, true, "var_" + col).setAutoclose(false).setCssStyle("_fm=courier"));
+					r.add(columnNames);
+				}
+
+				return r;
+			}
+		});
 
 		selectsEditor = new AmiCenterManagerTriggerEditor_ProjectionSelectEditor(generateConfig(), this);
 		addChild(form, 0, 0, 1, 1);
@@ -205,47 +242,6 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 				for (Row r : t.getRows())
 					sourceColumnsAtThisIndex.add((String) r.get("ColumnName"));
 				sourceTableColumns[index] = sourceColumnsAtThisIndex;
-				this.selectsEditor.onSourceTableColumnsChanged();
-				//update dependency for wheres field
-				wheresField.setCorrelationData(new Formula() {
-
-					@Override
-					public void onContextMenu(FormPortletField field, String action) {
-						AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
-
-					}
-
-					@Override
-					public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-						BasicWebMenu r = new BasicWebMenu();
-						AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
-						//1. Table Names: [source0, source1, ..., target]
-						WebMenu tableNames = new BasicWebMenu("Table Names", true);
-						//source table
-						List<String> sourceTableNamesSorted = CH.sort(sourceTables, SH.COMPARATOR_CASEINSENSITIVE_STRING);
-						for (int i = 0; i < sourceTableNamesSorted.size(); i++) {
-							String tableName = sourceTableNamesSorted.get(i);
-							tableNames.add(new BasicWebMenuLink(tableName + "&nbsp;&nbsp;&nbsp;<i>Source Table </i>" + i, true, "var_" + tableName).setAutoclose(false)
-									.setCssStyle("_fm=courier"));
-						}
-						//target table
-						tableNames.add(new BasicWebMenuLink(targetTable + "&nbsp;&nbsp;&nbsp;<i>Target Table </i>", true, "var_" + targetTable).setAutoclose(false)
-								.setCssStyle("_fm=courier"));
-						r.add(tableNames);
-
-						//2. Source i Column Names 
-						for (int i = 0; i < sourceTableColumns.length; i++) {
-							WebMenu columnNames = new BasicWebMenu("Source " + i + " Column Names", true);
-							Set<String> columnNamesAtThisIndex = sourceTableColumns[i];
-							for (String col : columnNamesAtThisIndex)
-								columnNames.add(new BasicWebMenuLink(col, true, "var_" + col).setAutoclose(false).setCssStyle("_fm=courier"));
-							r.add(columnNames);
-						}
-
-						return r;
-					}
-				});
-
 			} else if (query.endsWith("target")) {
 				this.targetTableColumns = new LinkedHashSet<String>();
 				for (Row r : t.getRows())

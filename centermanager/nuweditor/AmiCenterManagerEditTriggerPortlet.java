@@ -2,10 +2,12 @@ package com.f1.ami.web.centermanager.nuweditor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsResponse;
@@ -15,10 +17,10 @@ import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortl
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerAbstractTriggerEditor;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AggregateTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Amiscirpt;
-import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Decorate;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_DecorateTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_JoinTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_ProjectionTrigger;
-import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Relay;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_RelayTrigger;
 import com.f1.ami.web.graph.AmiCenterGraphNode;
 import com.f1.base.Action;
 import com.f1.base.Row;
@@ -58,8 +60,8 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 	final private AmiCenterManagerTriggerEditor_AggregateTrigger aggEditor;
 	final private AmiCenterManagerTriggerEditor_ProjectionTrigger projectionEditor;
 	final private AmiCenterManagerTriggerEditor_JoinTrigger joinEditor;
-	final private AmiCenterManagerTriggerEditor_Decorate decorateEditor;
-	final private AmiCenterManagerTriggerEditor_Relay relayEditor;
+	final private AmiCenterManagerTriggerEditor_DecorateTrigger decorateEditor;
+	final private AmiCenterManagerTriggerEditor_RelayTrigger relayEditor;
 
 	//trigger-type-specific editor
 	private InnerPortlet editorPanel;//all the type-specific fields excluding amiscript fields
@@ -75,9 +77,9 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		this.getManager().onPortletAdded(projectionEditor);
 		joinEditor = new AmiCenterManagerTriggerEditor_JoinTrigger(generateConfig());
 		this.getManager().onPortletAdded(joinEditor);
-		decorateEditor = new AmiCenterManagerTriggerEditor_Decorate(generateConfig());
+		decorateEditor = new AmiCenterManagerTriggerEditor_DecorateTrigger(generateConfig());
 		this.getManager().onPortletAdded(decorateEditor);
-		relayEditor = new AmiCenterManagerTriggerEditor_Relay(generateConfig());
+		relayEditor = new AmiCenterManagerTriggerEditor_RelayTrigger(generateConfig());
 		this.getManager().onPortletAdded(relayEditor);
 
 		formAndTriggerConfigGrid = new GridPortlet(generateConfig());
@@ -118,7 +120,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 		setRowSize(1, buttonsFp.getButtonPanelHeight());
 		this.form.addFormPortletListener(this);
-		sendQueryToBackend("SELECT TableName FROM SHOW TABLES;");
+		sendQueryToBackend("SELECT TableName FROM SHOW TABLES WHERE DefinedBy==\"USER\";");
 	}
 
 	private void initTriggerTypes() {
@@ -210,6 +212,21 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 						projectionEditor.setTargetTable(targetTable);
 					} else
 						projectionEditor.resetDependency();
+				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_DECORATE:
+					if (namesArr.length == 2) {
+						String sourceTable = namesArr[0];
+						String targetTable = namesArr[1];
+						decorateEditor.setSourceTable(sourceTable);
+						decorateEditor.setTargetTable(targetTable);
+					} else
+						decorateEditor.resetDependency();
+				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_RELAY:
+					if (namesArr.length == 1) {
+						String sourceTable = namesArr[0];
+						relayEditor.setSourceTable(sourceTable);
+						//relayEditor.setTargetTable(targetTable);
+					} else
+						relayEditor.resetDependency();
 			}
 		}
 
@@ -226,6 +243,18 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		return curEditor.getKeyValuePairs();
 	}
 
+	public String getTriggerOnValue() {
+		StringBuilder sb = new StringBuilder();
+		Set<String> ons = triggerOnField.getValue();
+		Iterator<String> i = ons.iterator();
+		while (i.hasNext()) {
+			sb.append(i.next());
+			if (i.hasNext())
+				sb.append(',');
+		}
+		return sb.toString();
+	}
+
 	@Override
 	public String preparePreUseClause() {
 		StringBuilder sb = new StringBuilder("CREATE TRIGGER ");
@@ -236,7 +265,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		sb.append(" OFTYPE ").append(triggerTypeField.getOption(triggerTypeField.getValue()).getName());
 
 		if (SH.is(triggerOnField.getValue()))
-			sb.append(" ON ").append(triggerOnField.getValue());
+			sb.append(" ON ").append(getTriggerOnValue());
 		else
 			sb.append(" ON ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
 

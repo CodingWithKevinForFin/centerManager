@@ -49,7 +49,7 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 	private static final int DEFAULT_TITLEHEIGHT = 27;
 	private static final int DEFAULT_TOPPOS = DEFAULT_SPACING + DEFAULT_TITLEHEIGHT;
 
-	public AmiCenterManagerTriggerEditor_AggregateSelectEditor(PortletConfig config, AmiCenterManagerTriggerEditor_AggregateTrigger owner) {
+	public AmiCenterManagerTriggerEditor_AggregateSelectEditor(PortletConfig config, final AmiCenterManagerTriggerEditor_AggregateTrigger owner) {
 		super(config);
 		this.owner = owner;
 		this.selectTitleField = this.addField(new FormPortletTitleField("selects"));
@@ -83,6 +83,25 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 
 		aggExpressionField = this.addField(new FormPortletTextField("( &nbsp"));
 		aggExpressionField.setHasButton(true);
+		aggExpressionField.setCorrelationData(new Formula() {
+
+			@Override
+			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
+				BasicWebMenu r = new BasicWebMenu();
+				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
+				//TODO:sub this with real values
+				//WebMenu variables = createVariablesMenu("Variables", CH.s("account", "region", "qty", "px"));
+				WebMenu variables = createVariablesMenu("Variables", owner.getSourceTableColumns());
+				r.add(variables);
+				return r;
+			}
+
+			@Override
+			public void onContextMenu(FormPortletField field, String action) {
+				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
+
+			}
+		});
 		aggExpressionField.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 140).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(145);
 
 		this.addButton = this.addField(new FormPortletButtonField(") &nbsp").setValue("Add"));
@@ -172,28 +191,6 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 
 	public String getOutput() {
 		return this.outputField.getValue();
-	}
-
-	public void onSourceTableColumnsChanged() {
-		aggExpressionField.setCorrelationData(new Formula() {
-
-			@Override
-			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-				BasicWebMenu r = new BasicWebMenu();
-				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
-				//TODO:sub this with real values
-				//WebMenu variables = createVariablesMenu("Variables", CH.s("account", "region", "qty", "px"));
-				WebMenu variables = createVariablesMenu("Variables", owner.getSourceTableColumns());
-				r.add(variables);
-				return r;
-			}
-
-			@Override
-			public void onContextMenu(FormPortletField field, String action) {
-				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
-
-			}
-		});
 	}
 
 	public void onTargetTableColumnsChanged() {

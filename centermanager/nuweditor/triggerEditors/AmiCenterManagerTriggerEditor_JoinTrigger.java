@@ -37,7 +37,7 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 	final private FormPortletSelectField<Short> typeField;
 	//menu should contain tablenames(left and right), tablecolumn(left and right)
 	final private FormPortletTextField onField;
-	final private AmiCenterManagerTriggerEditor_JoinSelectEditor selectEditor;
+	final private AmiCenterManagerTriggerEditor_JoinSelectEditor selectsEditor;
 
 	final private AmiWebService service;
 	private String leftTable;
@@ -72,6 +72,26 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
 				BasicWebMenu r = new BasicWebMenu();
 				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
+
+				//ADD TABLE NAMES AND COLUMNS
+				if (leftTable != null && rightTable != null && leftTableColumns != null && rightTableColumns != null) {
+					WebMenu tableNamesAndColumns = new BasicWebMenu("Table Names && Columns", true);
+
+					//TODO: better action than "conq_" for?(color no quotes)
+					WebMenu leftTableCols = new BasicWebMenu(leftTable + "&nbsp;&nbsp;&nbsp;<i>Left Table</i>", true);
+					for (String c : CH.sort(leftTableColumns, SH.COMPARATOR_CASEINSENSITIVE_STRING))
+						leftTableCols.add(new BasicWebMenuLink(c, true, "conq_" + leftTable + "." + c).setAutoclose(false).setCssStyle("_fm=courier"));
+
+					WebMenu rightTableCols = new BasicWebMenu(rightTable + "&nbsp;&nbsp;&nbsp;<i>Right Table</i>", true);
+					for (String c : CH.sort(rightTableColumns, SH.COMPARATOR_CASEINSENSITIVE_STRING))
+						rightTableCols.add(new BasicWebMenuLink(c, true, "conq_" + rightTable + "." + c).setAutoclose(false).setCssStyle("_fm=courier"));
+
+					tableNamesAndColumns.add(leftTableCols);
+					tableNamesAndColumns.add(rightTableCols);
+					r.add(tableNamesAndColumns);
+				}
+
+				////////////////////////////////////
 				if (leftTable != null && rightTable != null) {
 					//table names [left, right]
 					WebMenu tableNames = new BasicWebMenu("Table Names", true);
@@ -108,18 +128,29 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 		onField.setHelp("An expression for how to relate the two tables in the form:" + "<br>"
 				+ "<b><i style=\"color:blue\">leftColumn == rightColumn [ && leftColumn == rightColumn ... ]</i></b>");
 
-		selectEditor = new AmiCenterManagerTriggerEditor_JoinSelectEditor(generateConfig());
+		selectsEditor = new AmiCenterManagerTriggerEditor_JoinSelectEditor(generateConfig(), this);
 
 		this.form.addMenuListener(this);
 		this.form.setMenuFactory(this);
 		addChild(form, 0, 0, 1, 1);
-		addChild(this.selectEditor, 0, 1, 1, 4);
+		addChild(this.selectsEditor, 0, 1, 1, 4);
 	}
 
 	@Override
 	public String getKeyValuePairs() {
-		// TODO Auto-generated method stub
-		return null;
+		StringBuilder sb = new StringBuilder();
+		sb.append(" type = ").append(SH.doubleQuote(typeField.getOption(typeField.getValue()).getName()));
+		if (SH.is(onField.getValue()))
+			sb.append(" on = ").append(SH.doubleQuote(onField.getValue()));
+		else
+			sb.append(" on = ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
+
+		if (SH.is(selectsEditor.getOutput()))
+			sb.append(" selects = ").append(SH.doubleQuote(selectsEditor.getOutput()));
+		else
+			sb.append(" selects = ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
+
+		return sb.toString();
 	}
 
 	public void resetDependency() {
@@ -133,19 +164,39 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 
 	public void setLeftTable(String left) {
 		this.leftTable = left;
-		this.selectEditor.setLeft(left);
 		sendQueryToBackend("SELECT ColumnName FROM SHOW COLUMNS WHERE TableName==\"" + leftTable + "\";//left");
 	}
 
 	public void setRightTable(String right) {
 		this.rightTable = right;
-		this.selectEditor.setRight(right);
 		sendQueryToBackend("SELECT ColumnName FROM SHOW COLUMNS WHERE TableName==\"" + rightTable + "\";//right");
 	}
 
 	public void setResultTable(String result) {
 		this.resultTable = result;
 		sendQueryToBackend("SELECT ColumnName FROM SHOW COLUMNS WHERE TableName==\"" + resultTable + "\";//result");
+	}
+
+	public String getLeftTable() {
+		return this.leftTable;
+	}
+
+	public String getRightTable() {
+		return this.rightTable;
+	}
+
+	public String getResultTable() {
+		return this.resultTable;
+	}
+
+	public Set<String> getLeftTableColumns() {
+		return this.leftTableColumns;
+	}
+	public Set<String> getRightTableColumns() {
+		return this.rightTableColumns;
+	}
+	public Set<String> getResultTableColumns() {
+		return this.resultTableColumns;
 	}
 
 	@Override
@@ -190,18 +241,16 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 				this.leftTableColumns = new LinkedHashSet<String>();
 				for (Row r : t.getRows())
 					this.leftTableColumns.add((String) r.get("ColumnName"));
-				this.selectEditor.setLeftTableColumns(this.leftTableColumns);
 			} else if (query.endsWith("//right")) {
 				this.rightTableColumns = new LinkedHashSet<String>();
 				for (Row r : t.getRows())
 					this.rightTableColumns.add((String) r.get("ColumnName"));
-				this.selectEditor.setRightTableColumns(this.rightTableColumns);
 
 			} else if (query.endsWith("//result")) {
 				this.resultTableColumns = new LinkedHashSet<String>();
 				for (Row r : t.getRows())
 					this.resultTableColumns.add((String) r.get("ColumnName"));
-				this.selectEditor.setResultTableColumns(this.resultTableColumns);
+				this.selectsEditor.onResultTableColumnsChanged();
 			}
 
 		}

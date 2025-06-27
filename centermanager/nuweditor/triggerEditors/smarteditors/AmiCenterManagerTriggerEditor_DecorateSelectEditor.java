@@ -3,10 +3,9 @@ package com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors;
 import java.util.Map;
 import java.util.Set;
 
-import com.f1.ami.web.AmiWebMenuUtils;
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
-import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_JoinTrigger;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_DecorateTrigger;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenuLink;
@@ -25,11 +24,11 @@ import com.f1.suite.web.portal.impl.form.FormPortletTitleField;
 import com.f1.utils.CH;
 import com.f1.utils.SH;
 
-public class AmiCenterManagerTriggerEditor_JoinSelectEditor extends FormPortlet implements FormPortletListener, FormPortletContextMenuFactory, FormPortletContextMenuListener {
+public class AmiCenterManagerTriggerEditor_DecorateSelectEditor extends FormPortlet implements FormPortletListener, FormPortletContextMenuFactory, FormPortletContextMenuListener {
 	final private FormPortletTitleField selectTitleField;
 	final private FormPortletSelectField<String> targetColumnField;
 
-	final private FormPortletTextAreaField sourceColumnField;
+	final private FormPortletSelectField<String> sourceColumnField;
 
 	final private FormPortletTextAreaField outputField;
 	final private FormPortletButtonField addButton;
@@ -37,17 +36,15 @@ public class AmiCenterManagerTriggerEditor_JoinSelectEditor extends FormPortlet 
 	public StringBuilder output = new StringBuilder();
 
 	final private AmiWebService service;
-
-	private AmiCenterManagerTriggerEditor_JoinTrigger owner;
-
-	private static final int COLNAME_WIDTH = 150; //60
+	private AmiCenterManagerTriggerEditor_DecorateTrigger owner;
+	private static final int COLNAME_WIDTH = 200; //60
 	private static final int DEFAULT_ROWHEIGHT = 25;
 	private static final int DEFAULT_LEFTPOS = 80; //164
 	private static final int DEFAULT_SPACING = 10;
 	private static final int DEFAULT_TITLEHEIGHT = 27;
 	private static final int DEFAULT_TOPPOS = DEFAULT_SPACING + DEFAULT_TITLEHEIGHT;
 
-	public AmiCenterManagerTriggerEditor_JoinSelectEditor(PortletConfig config, final AmiCenterManagerTriggerEditor_JoinTrigger owner) {
+	public AmiCenterManagerTriggerEditor_DecorateSelectEditor(PortletConfig config, final AmiCenterManagerTriggerEditor_DecorateTrigger owner) {
 		super(config);
 		this.owner = owner;
 		this.service = AmiWebUtils.getService(getManager());
@@ -63,84 +60,28 @@ public class AmiCenterManagerTriggerEditor_JoinSelectEditor extends FormPortlet 
 		sourceTitleDiv.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 48).setTopPosPx(DEFAULT_TOPPOS).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(200);
 
 		targetColumnField = this.addField(new FormPortletSelectField(String.class, ""));
+		sourceColumnField = this.addField(new FormPortletSelectField(String.class, "&nbsp&nbsp<b>=</b>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp "));
+
 		targetColumnField.setWidthPx(COLNAME_WIDTH);
 		targetColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
 		targetColumnField.setLeftPosPx(DEFAULT_LEFTPOS);
 		targetColumnField.setTopPosPx(DEFAULT_TOPPOS * 2);
 
-		sourceColumnField = this.addField(new FormPortletTextAreaField("=&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"));
-		sourceColumnField.setWidthPx(COLNAME_WIDTH * 3);
+		sourceColumnField.setWidthPx(COLNAME_WIDTH);
 		sourceColumnField.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS);
 		sourceColumnField.setTopPosPx(DEFAULT_TOPPOS * 2);
-		sourceColumnField.setHeightPx(DEFAULT_ROWHEIGHT * 4);
-
-		sourceColumnField.setHasButton(true);
-		sourceColumnField.setCorrelationData(new Formula() {
-			@Override
-			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-				BasicWebMenu r = new BasicWebMenu();
-				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
-
-				if (owner.getLeftTable() != null && owner.getRightTable() != null && owner.getLeftTableColumns() != null && owner.getRightTableColumns() != null) {
-					WebMenu tableNamesAndColumns = new BasicWebMenu("Table Names && Columns", true);
-
-					//TODO: better action than "conq_" for?(color no quotes)
-					WebMenu leftTableCols = new BasicWebMenu(owner.getLeftTable() + "&nbsp;&nbsp;&nbsp;<i>Left Table</i>", true);
-					for (String c : CH.sort(owner.getLeftTableColumns(), SH.COMPARATOR_CASEINSENSITIVE_STRING))
-						leftTableCols.add(new BasicWebMenuLink(c, true, "conq_" + owner.getLeftTable() + "." + c).setAutoclose(false).setCssStyle("_fm=courier"));
-
-					WebMenu rightTableCols = new BasicWebMenu(owner.getRightTable() + "&nbsp;&nbsp;&nbsp;<i>Right Table</i>", true);
-					for (String c : CH.sort(owner.getRightTableColumns(), SH.COMPARATOR_CASEINSENSITIVE_STRING))
-						rightTableCols.add(new BasicWebMenuLink(c, true, "conq_" + owner.getRightTable() + "." + c).setAutoclose(false).setCssStyle("_fm=courier"));
-
-					tableNamesAndColumns.add(leftTableCols);
-					tableNamesAndColumns.add(rightTableCols);
-					r.add(tableNamesAndColumns);
-				}
-
-				if (owner.getLeftTable() != null && owner.getRightTable() != null) {
-					//table names [left, right]
-					WebMenu tableNames = new BasicWebMenu("Table Names", true);
-					String leftTableHTML = owner.getLeftTable() + "&nbsp;&nbsp;&nbsp;<i>Left Table</i>";
-					String rightTableHTML = owner.getRightTable() + "&nbsp;&nbsp;&nbsp;<i>Right Table</i>";
-					tableNames.add(new BasicWebMenuLink(leftTableHTML, true, "var_" + owner.getLeftTable()).setAutoclose(false).setCssStyle("_fm=courier"));
-					tableNames.add(new BasicWebMenuLink(rightTableHTML, true, "var_" + owner.getRightTable()).setAutoclose(false).setCssStyle("_fm=courier"));
-					r.add(tableNames);
-				}
-
-				if (owner.getLeftTableColumns() != null) {
-					//table columns [leftColumn, rightColumn]
-					WebMenu leftColumns = new BasicWebMenu("Left Table Columns", true);
-					for (String c : CH.sort(owner.getLeftTableColumns(), SH.COMPARATOR_CASEINSENSITIVE_STRING))
-						leftColumns.add(new BasicWebMenuLink(c, true, "var_" + c).setAutoclose(false).setCssStyle("_fm=courier"));
-					r.add(leftColumns);
-				}
-				if (owner.getRightTableColumns() != null) {
-					WebMenu rightColumns = new BasicWebMenu("Right Table Columns", true);
-					for (String c : CH.sort(owner.getRightTableColumns(), SH.COMPARATOR_CASEINSENSITIVE_STRING))
-						rightColumns.add(new BasicWebMenuLink(c, true, "var_" + c).setAutoclose(false).setCssStyle("_fm=courier"));
-					r.add(rightColumns);
-				}
-
-				return r;
-			}
-
-			@Override
-			public void onContextMenu(FormPortletField field, String action) {
-				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
-
-			}
-		});
+		//		sourceColumnField.setRightPosPx(300);
+		sourceColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
 
 		this.addButton = this.addField(new FormPortletButtonField("").setValue("Add"));
-		this.addButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 230).setTopPosPx(DEFAULT_TOPPOS * 5).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
+		this.addButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 230).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
 		this.addButton.setCssStyle("_fm=bold|_fg=#FFFFFF|_bg=#FFA500|style.borderRadius=5px");
 
 		this.clearButton = this.addField(new FormPortletButtonField("").setValue("Clear"));
-		this.clearButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 320).setTopPosPx(DEFAULT_TOPPOS * 5).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
+		this.clearButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 320).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
 
 		this.outputField = this.addField(new FormPortletTextAreaField("Output"));
-		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 4 + DEFAULT_ROWHEIGHT * 4).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
+		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
 
 		this.addFormPortletListener(this);
 		this.addMenuListener(this);
@@ -205,9 +146,9 @@ public class AmiCenterManagerTriggerEditor_JoinSelectEditor extends FormPortlet 
 		return variables;
 	}
 
-	public void onResultTableColumnsChanged() {
+	public void setResultTableColumns(Set<String> result) {
 		targetColumnField.clearOptions();
-		for (String col : this.owner.getResultTableColumns())
+		for (String col : result)
 			targetColumnField.addOption(col, col);
 	}
 
@@ -228,6 +169,19 @@ public class AmiCenterManagerTriggerEditor_JoinSelectEditor extends FormPortlet 
 
 	public String getOutput() {
 		return outputField.getValue();
+	}
+
+	public void onSourceColumnsChanged() {
+		this.sourceColumnField.clearOptions();
+		for (String col : this.owner.getSourceTableColumns())
+			this.sourceColumnField.addOption(col, col);
+
+	}
+
+	public void onTargetColumnsChanged() {
+		this.targetColumnField.clearOptions();
+		for (String col : this.owner.getTargetTableColumns())
+			this.targetColumnField.addOption(col, col);
 	}
 
 }
