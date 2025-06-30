@@ -5,6 +5,7 @@ import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
+import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.utils.SH;
 
 public class AmiCenterManagerTriggerEditor_Decorate extends AmiCenterManagerAbstractTriggerEditor {
@@ -51,6 +52,12 @@ public class AmiCenterManagerTriggerEditor_Decorate extends AmiCenterManagerAbst
 		if (keysChangeField.getBooleanValue())
 			sb.append(" keysChange = ").append(SH.doubleQuote("true"));
 		return sb.toString();
+	}
+
+	@Override
+	public FormPortletField<?> getFieldByName(String name) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

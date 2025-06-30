@@ -230,4 +230,8 @@ public class AmiCenterManagerTriggerEditor_JoinSelectEditor extends FormPortlet 
 		return outputField.getValue();
 	}
 
+	public FormPortletField<?> getOutputField() {
+		return outputField;
+	}
+
 }

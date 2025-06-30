@@ -11,12 +11,13 @@ import java.util.Set;
 
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsResponse;
+import com.f1.ami.web.AmiWebFormPortletAmiScriptField;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerAbstractTriggerEditor;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AggregateTrigger;
-import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_Amiscirpt;
+import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AmiscirptTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_DecorateTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_JoinTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_ProjectionTrigger;
@@ -31,15 +32,21 @@ import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.GridPortlet;
 import com.f1.suite.web.portal.impl.HtmlPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortlet;
+import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
 import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.suite.web.portal.impl.form.FormPortletMultiCheckboxField;
 import com.f1.suite.web.portal.impl.form.FormPortletSelectField;
+import com.f1.suite.web.portal.impl.form.FormPortletTextAreaField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
 import com.f1.utils.CH;
 import com.f1.utils.SH;
 import com.f1.utils.string.sqlnode.AdminNode;
 
 public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstractEditCenterObjectPortlet {
+	public static final Set<String> COMMON_OPTIONS = CH.s("triggerName", "triggerOn", "triggerPriority", "triggerType");
+
+	//the dependencies for these can only determined once the "target" field has been specified(for tge realy trigger only)
+	public static final Set<String> IMPORT_DEFERRED_OPTIONS = CH.s("inserts", "updates", "deletes");
 	//height const
 	private static final int OPTION_FORM_HEIGHT = 90;//common option form height
 
@@ -56,7 +63,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 	private AmiCenterManagerAbstractTriggerEditor curEditor;
 
 	//trigger editors
-	final private AmiCenterManagerTriggerEditor_Amiscirpt amiscriptEditor;
+	final private AmiCenterManagerTriggerEditor_AmiscirptTrigger amiscriptEditor;
 	final private AmiCenterManagerTriggerEditor_AggregateTrigger aggEditor;
 	final private AmiCenterManagerTriggerEditor_ProjectionTrigger projectionEditor;
 	final private AmiCenterManagerTriggerEditor_JoinTrigger joinEditor;
@@ -69,7 +76,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 	public AmiCenterManagerEditTriggerPortlet(PortletConfig config, boolean isAdd) {
 		super(config, isAdd);
 		this.form = new FormPortlet(generateConfig());
-		amiscriptEditor = new AmiCenterManagerTriggerEditor_Amiscirpt(generateConfig());
+		amiscriptEditor = new AmiCenterManagerTriggerEditor_AmiscirptTrigger(generateConfig());
 		this.getManager().onPortletAdded(amiscriptEditor);
 		aggEditor = new AmiCenterManagerTriggerEditor_AggregateTrigger(generateConfig());
 		this.getManager().onPortletAdded(aggEditor);
@@ -89,15 +96,18 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 		triggerNameField = this.form.addField(new FormPortletTextField(AmiCenterManagerUtils.formatRequiredField("Name")));
 		triggerNameField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
+		triggerNameField.setName("triggerName");
 		triggerNameField.setWidth(NAME_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS);
 		triggerNameField.setHelp("Name of the trigger to create, must be unique within the database");
 
 		//trigger type
 		triggerTypeField = this.form.addField(new FormPortletSelectField(short.class, AmiCenterManagerUtils.formatRequiredField("Type")));
+		triggerTypeField.setName("triggerType");
 		initTriggerTypes();
 		triggerTypeField.setWidth(TYPE_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + DEFAULT_X_SPACING).setTopPosPx(DEFAULT_TOPPOS);
 
 		triggerOnField = this.form.addField(new FormPortletMultiCheckboxField(String.class, AmiCenterManagerUtils.formatRequiredField("ON")));
+		triggerOnField.setName("triggerOn");
 		triggerOnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
 		triggerOnField.setHelp("Name of the table(s) that will cause the trigger to execute");
 		//		triggerOnField.setWidth(ON_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + DEFAULT_X_SPACING * 2)
@@ -107,6 +117,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		triggerOnField.setBorderColor("00FFFFFF");
 
 		triggerPriorityField = this.form.addField(new FormPortletTextField("PRIORITY"));
+		triggerPriorityField.setName("triggerPriority");
 		triggerPriorityField.setHelp("a number, timers with lowest value are executed first. Only considered when two or more timers have the same exact scheduled time");
 		triggerPriorityField.setWidth(PRIORITY_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + (int) (DEFAULT_X_SPACING * 3.5))
 				.setTopPosPx(DEFAULT_TOPPOS);
@@ -283,19 +294,74 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 	public void importFromText(String text, StringBuilder sink) {
 		AdminNode an = AmiCenterManagerUtils.scriptToAdminNode(text);
 		Map<String, String> triggerConfig = AmiCenterManagerUtils.parseAdminNode_Trigger(an);
+		String triggerType = triggerConfig.get("triggerType");
+		this.triggerTypeField.setValue(AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TRIGGER, SH.toUpperCase(triggerType)));
+		this.onFieldValueChanged(this.form, this.triggerTypeField, null);
+
 		for (Entry<String, String> e : triggerConfig.entrySet()) {
 			String key = e.getKey();
 			String value = e.getValue();
 			if ("triggerName".equals(key))
 				this.triggerNameField.setValue(value);
 			else if ("triggerType".equals(key)) {
-				this.triggerTypeField.setValue(AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TRIGGER, value));
-				this.onFieldValueChanged(this.form, this.triggerTypeField, null);
+				continue;
 			} else if ("triggerOn".equals(key)) {
-				this.triggerOnField.setValue(CH.s(value));
+				String[] l;
+				//parse value
+				if (value.contains(",")) {
+					l = SH.split(',', value);
+				} else
+					l = new String[] { value };
+				try {
+					this.triggerOnField.setValue(CH.ls(l));
+				} catch (Exception ex) {
+					AmiCenterManagerUtils.popDialog(service, ex.getMessage(), "Import Error");
+				}
+
 			} else if ("triggerPriority".equals(key))
 				this.triggerPriorityField.setValue(value);
-			else {//TODO:all the use options go here
+			else {//all the use options go here
+					//1. locate the field
+				FormPortletField<?> fpf = null;
+				if (COMMON_OPTIONS.contains(key))
+					fpf = this.form.getField(key);
+				else {
+					try {
+						fpf = this.curEditor.getFieldByName(key);
+					} catch (Exception ex) {
+						AmiCenterManagerUtils.popDialog(service, ex.getMessage(), "Import Error");
+					}
+				}
+				if (fpf == null)
+					throw new NullPointerException("cannot find the field for name:" + key);
+				//2. set the value for the field depending on the field type
+				if (fpf instanceof FormPortletTextField)
+					((FormPortletTextField) fpf).setValue(value);
+				else if (fpf instanceof FormPortletTextAreaField) {
+					((FormPortletTextAreaField) fpf).setValue(value);
+				} else if (fpf instanceof AmiWebFormPortletAmiScriptField) {
+					((AmiWebFormPortletAmiScriptField) fpf).setValue(value);
+				} else if (fpf instanceof FormPortletCheckboxField) {
+					if ("true".equals(value))
+						((FormPortletCheckboxField) fpf).setValue(true);
+					else
+						((FormPortletCheckboxField) fpf).setValue(false);
+				} else if (fpf instanceof FormPortletMultiCheckboxField) {
+					//parse value
+					String[] l;
+					if (value.contains(",")) {
+						l = SH.split(',', value);
+					} else
+						l = new String[] { value };
+					//					if (IMPORT_DEFERRED_OPTIONS.contains(key))
+					//						continue;
+					if ("target".equals(key)) {
+						((FormPortletMultiCheckboxField) fpf).setValueNoThrow(CH.ls(l));
+						this.relayEditor.onFieldValueChanged(null, fpf, null);
+					} else
+						((FormPortletMultiCheckboxField) fpf).setValueNoThrow(CH.ls(l));
+
+				}
 
 			}
 		}

@@ -180,6 +180,16 @@ public class AmiCenterManagerTriggerEditor_DecorateTrigger extends AmiCenterMana
 		return this.targetTableColumns;
 	}
 
+	@Override
+	public FormPortletField<?> getFieldByName(String name) {
+		if ("on".equals(name))
+			return this.onField;
+		if ("selects".equals(name))
+			return this.selectsEditor.getOutputField();
+		throw new NullPointerException("No such name:" + name);
+
+	}
+
 	//The abilities to query the backend
 	@Override
 	public void onBackendResponse(ResultMessage<Action> result) {

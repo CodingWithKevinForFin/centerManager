@@ -224,4 +224,8 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 		//		targetColumnField.addOption("value", "value");
 	}
 
+	public FormPortletField<?> getOutputField() {
+		return this.outputField;
+	}
+
 }

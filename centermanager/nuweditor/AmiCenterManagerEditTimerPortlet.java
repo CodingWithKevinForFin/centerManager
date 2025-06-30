@@ -101,7 +101,7 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		this.timerOnField.setHelp("either:<br>" + "<ul><li>(1). A positive number defining the period in milliseconds between timer executions.</li>"
 				+ "  <li>(2). Empty string (\"\") to never run timer, useful for timers that should just run at startup, see <i style=\"color:blue\">onStartupScript</i></li>"
 				+ "  <li>(3). Crontab style entry declaring the schedule of when the timer should be execute:</li></ul>");
-		this.timerOnField.setWidthPx(PRIORITY_WIDTH);
+		this.timerOnField.setWidthPx(120);
 		this.timerOnField.setHeightPx(DEFAULT_ROWHEIGHT);
 		this.timerOnField.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + 2 * DEFAULT_X_SPACING);
 		this.timerOnField.setTopPosPx(DEFAULT_TOPPOS);
@@ -112,7 +112,7 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		this.timerPriorityField.setHelp("a number, timers with lowest value are executed first. Only considered when two or more timers have the same exact scheduled time");
 		this.timerPriorityField.setWidthPx(PRIORITY_WIDTH);
 		this.timerPriorityField.setHeightPx(DEFAULT_ROWHEIGHT);
-		this.timerPriorityField.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + ON_WIDTH + 3 * DEFAULT_X_SPACING);
+		this.timerPriorityField.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + 2 * DEFAULT_X_SPACING + 200);
 		this.timerPriorityField.setTopPosPx(DEFAULT_TOPPOS);
 		this.timerPriorityField.setRightPosPx(80);
 

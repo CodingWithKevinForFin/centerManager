@@ -42,7 +42,7 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 	private static final int FORM_WIDTH = 550;
 	private static final int FORM_HEIGHT = 300;
 
-	final private FormPortletCheckboxField allowExternalUpdateField;
+	final private FormPortletCheckboxField allowExternalUpdatesField;
 	final private FormPortletTextField wheresField;
 	final private AmiCenterManagerTriggerEditor_ProjectionSelectEditor selectsEditor;
 	final private AmiWebService service;
@@ -56,8 +56,8 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 	public AmiCenterManagerTriggerEditor_ProjectionTrigger(PortletConfig config) {
 		super(config);
 		service = AmiWebUtils.getService(getManager());
-		allowExternalUpdateField = form.addField(new FormPortletCheckboxField("allowExternalUpdates"));
-		allowExternalUpdateField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
+		allowExternalUpdatesField = form.addField(new FormPortletCheckboxField("allowExternalUpdates"));
+		allowExternalUpdatesField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
 				+ "If true, then other processes (i.e triggers, UPDATEs) are allowed to perform UPDATEs on the target table." + "<br>"
 				+ " Please use precaution when using this feature, since updating cells controlled by the aggregate trigger will result into an undesirable state.");
 
@@ -143,8 +143,8 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 		else
 			sb.append(" selects = ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
 
-		if (allowExternalUpdateField.getBooleanValue())
-			sb.append(" allowExternalUpdate = ").append(SH.doubleQuote("true"));
+		if (allowExternalUpdatesField.getBooleanValue())
+			sb.append(" allowExternalUpdates = ").append(SH.doubleQuote("true"));
 		return sb.toString();
 	}
 
@@ -214,6 +214,19 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 	public Set<String> getTargetTableColumns() {
 		return this.targetTableColumns;
 	}
+
+	@Override
+	public FormPortletField<?> getFieldByName(String name) {
+		if ("wheres".equals(name))
+			return this.wheresField;
+		if ("selects".equals(name))
+			return this.selectsEditor.getOutputField();
+		if ("allowExternalUpdates".equals(name))
+			return this.allowExternalUpdatesField;
+		throw new NullPointerException("No such name:" + name);
+
+	}
+
 	//The abilities to query the backend
 	@Override
 	public void onBackendResponse(ResultMessage<Action> result) {

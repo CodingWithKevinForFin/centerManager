@@ -17,6 +17,7 @@ import com.f1.base.Table;
 import com.f1.container.ResultMessage;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
+import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.utils.SH;
 
 public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterManagerAbstractTriggerEditor {
@@ -30,7 +31,7 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 
 	final private AmiWebService service;
 
-	final private FormPortletCheckboxField allowExternalUpdateField;
+	final private FormPortletCheckboxField allowExternalUpdatesField;
 
 	final private AmiCenterManagerTriggerEditor_AggregateGroupByEditor groupByEditor;
 	final private AmiCenterManagerTriggerEditor_AggregateSelectEditor selectsEditor;
@@ -45,8 +46,8 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 		super(config);
 		this.service = AmiWebUtils.getService(getManager());
 
-		allowExternalUpdateField = form.addField(new FormPortletCheckboxField("allowExternalUpdates"));
-		allowExternalUpdateField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
+		allowExternalUpdatesField = form.addField(new FormPortletCheckboxField("allowExternalUpdates"));
+		allowExternalUpdatesField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
 				+ "If true, then other processes (i.e triggers, UPDATEs) are allowed to perform UPDATEs on the target table." + "<br>"
 				+ " Please use precaution when using this feature, since updating cells controlled by the aggregate trigger will result into an undesirable state.");
 
@@ -73,8 +74,8 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 		else
 			sb.append(" selects = ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
 
-		if (allowExternalUpdateField.getBooleanValue())
-			sb.append(" allowExternalUpdate = ").append(SH.doubleQuote("true"));
+		if (allowExternalUpdatesField.getBooleanValue())
+			sb.append(" allowExternalUpdates = ").append(SH.doubleQuote("true"));
 		return sb.toString();
 	}
 
@@ -110,6 +111,18 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 
 	public Set<String> getSourceTableColumns() {
 		return this.sourceTableColumns;
+	}
+
+	@Override
+	public FormPortletField<?> getFieldByName(String name) {
+		if ("groupBys".equals(name))
+			return this.groupByEditor.getOutputField();
+		if ("selects".equals(name))
+			return this.selectsEditor.getOutputField();
+		if ("allowExternalUpdates".equals(name))
+			return this.allowExternalUpdatesField;
+		throw new NullPointerException("No such name:" + name);
+
 	}
 
 	//The abilities to query the backend

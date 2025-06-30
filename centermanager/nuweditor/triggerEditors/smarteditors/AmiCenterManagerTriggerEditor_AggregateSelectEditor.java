@@ -193,6 +193,10 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 		return this.outputField.getValue();
 	}
 
+	public FormPortletField<?> getOutputField() {
+		return this.outputField;
+	}
+
 	public void onTargetTableColumnsChanged() {
 		targetColumnField.clearOptions();
 		Set<String> targetTableColumns = owner.getTargetTableColumns();

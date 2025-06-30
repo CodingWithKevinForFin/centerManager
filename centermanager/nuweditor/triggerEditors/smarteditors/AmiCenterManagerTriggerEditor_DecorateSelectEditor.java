@@ -171,6 +171,10 @@ public class AmiCenterManagerTriggerEditor_DecorateSelectEditor extends FormPort
 		return outputField.getValue();
 	}
 
+	public FormPortletField<?> getOutputField() {
+		return outputField;
+	}
+
 	public void onSourceColumnsChanged() {
 		this.sourceColumnField.clearOptions();
 		for (String col : this.owner.getSourceTableColumns())

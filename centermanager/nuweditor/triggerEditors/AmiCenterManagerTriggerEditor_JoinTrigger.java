@@ -200,6 +200,18 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 	}
 
 	@Override
+	public FormPortletField<?> getFieldByName(String name) {
+		if ("type".equals(name))
+			return this.typeField;
+		if ("selects".equals(name))
+			return this.selectsEditor.getOutputField();
+		if ("on".equals(name))
+			return this.onField;
+		throw new NullPointerException("No such name:" + name);
+
+	}
+
+	@Override
 	public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
 		if (field == this.onField) {
 			Formula f = (Formula) this.onField.getCorrelationData();

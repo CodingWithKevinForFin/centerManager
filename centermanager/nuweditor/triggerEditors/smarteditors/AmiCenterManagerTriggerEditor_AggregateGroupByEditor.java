@@ -141,6 +141,10 @@ public class AmiCenterManagerTriggerEditor_AggregateGroupByEditor extends FormPo
 		return outputField.getValue();
 	}
 
+	public FormPortletField<?> getOutputField() {
+		return this.outputField;
+	}
+
 	public void onTargetTableColumnsChanged() {
 		targetColumnField.clearOptions();
 		Set<String> targetTableColumns = owner.getTargetTableColumns();

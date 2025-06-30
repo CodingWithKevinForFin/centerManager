@@ -4,6 +4,7 @@ import com.f1.ami.web.AmiWebFormPortletAmiScriptField;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.suite.web.portal.PortletConfig;
+import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.suite.web.portal.impl.form.FormPortletSelectField;
 import com.f1.utils.SH;
 
@@ -60,6 +61,12 @@ public class AmiCenterManagerTriggerEditor_Join extends AmiCenterManagerAbstract
 		else
 			sb.append(" selects = ").append(AmiCenterEntityConsts.REQUIRED_FEILD_WARNING);
 		return sb.toString();
+	}
+
+	@Override
+	public FormPortletField<?> getFieldByName(String name) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

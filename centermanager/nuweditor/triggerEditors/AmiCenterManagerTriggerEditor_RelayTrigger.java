@@ -59,9 +59,9 @@ public class AmiCenterManagerTriggerEditor_RelayTrigger extends AmiCenterManager
 	final private FormPortletTextField keystorePassField;
 	final private FormPortletMultiCheckboxField<String> targetField;
 
-	final private FormPortletMultiCheckboxField<String> insertField;
-	final private FormPortletMultiCheckboxField<String> updateField;
-	final private FormPortletMultiCheckboxField<String> deleteField;
+	final private FormPortletMultiCheckboxField<String> insertsField;
+	final private FormPortletMultiCheckboxField<String> updatesField;
+	final private FormPortletMultiCheckboxField<String> deletesField;
 
 	final private FormPortletTextField whereField;
 
@@ -108,22 +108,22 @@ public class AmiCenterManagerTriggerEditor_RelayTrigger extends AmiCenterManager
 		sendQueryToBackend("SELECT TableName FROM SHOW TABLES WHERE DefinedBy==\"USER\";");
 
 		//each of the following field occupies one row
-		insertField = form.addField(new FormPortletMultiCheckboxField(String.class, "insert"));
-		insertField.setWidth(FORM_WIDTH).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_Y_SPACING * 3 + DEFAULT_ROWHEIGHT * 2 + 10).setHeight(DEFAULT_ROWHEIGHT)
+		insertsField = form.addField(new FormPortletMultiCheckboxField(String.class, "inserts"));
+		insertsField.setWidth(FORM_WIDTH).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_Y_SPACING * 3 + DEFAULT_ROWHEIGHT * 2 + 10).setHeight(DEFAULT_ROWHEIGHT)
 				.setBgColor("#ffffff");
-		insertField.setHelp(" comma delimited list of target columns to be sent on an onInserted event on the source table." + "<br>"
+		insertsField.setHelp(" comma delimited list of target columns to be sent on an onInserted event on the source table." + "<br>"
 				+ " If your target table has a unique constraint, in most cases you will want to add that column(s) to this list");
 
-		updateField = form.addField(new FormPortletMultiCheckboxField(String.class, "update"));
-		updateField.setWidth(FORM_WIDTH).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_Y_SPACING * 4 + DEFAULT_ROWHEIGHT * 3 + 10).setHeight(DEFAULT_ROWHEIGHT)
+		updatesField = form.addField(new FormPortletMultiCheckboxField(String.class, "updates"));
+		updatesField.setWidth(FORM_WIDTH).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_Y_SPACING * 4 + DEFAULT_ROWHEIGHT * 3 + 10).setHeight(DEFAULT_ROWHEIGHT)
 				.setBgColor("#ffffff");
-		updateField.setHelp("comma delimited list of target columns to be sent on an onUpdated event on the source table. " + "<br>"
+		updatesField.setHelp("comma delimited list of target columns to be sent on an onUpdated event on the source table. " + "<br>"
 				+ "If your target table has a unique constraint, a unique identifier column(s) needs to be in this list");
 
-		deleteField = form.addField(new FormPortletMultiCheckboxField(String.class, "delete"));
-		deleteField.setWidth(FORM_WIDTH).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_Y_SPACING * 5 + DEFAULT_ROWHEIGHT * 4 + 10).setHeight(DEFAULT_ROWHEIGHT)
+		deletesField = form.addField(new FormPortletMultiCheckboxField(String.class, "deletes"));
+		deletesField.setWidth(FORM_WIDTH).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_Y_SPACING * 5 + DEFAULT_ROWHEIGHT * 4 + 10).setHeight(DEFAULT_ROWHEIGHT)
 				.setBgColor("#ffffff");
-		deleteField.setHelp(" comma delimited list of target columns to be sent on an onDeleted event on the source table." + "<br>"
+		deletesField.setHelp(" comma delimited list of target columns to be sent on an onDeleted event on the source table." + "<br>"
 				+ "If your target table has a unique constraint, a unique identifier column(s) needs to be in this list");
 
 		whereField = form.addField(new FormPortletTextField("where"));
@@ -262,14 +262,14 @@ public class AmiCenterManagerTriggerEditor_RelayTrigger extends AmiCenterManager
 		if (SH.is(derivedValuesField.getValue()))
 			sb.append(" derivedValues = ").append(SH.doubleQuote(derivedValuesField.getValue()));
 
-		if (SH.is(insertField.getValue()))
-			sb.append(" insert = ").append(SH.doubleQuote(getMultiCkboxValue(insertField.getValue())));
+		if (SH.is(insertsField.getValue()))
+			sb.append(" inserts = ").append(SH.doubleQuote(getMultiCkboxValue(insertsField.getValue())));
 
-		if (SH.is(updateField.getValue()))
-			sb.append(" update = ").append(SH.doubleQuote(getMultiCkboxValue(updateField.getValue())));
+		if (SH.is(updatesField.getValue()))
+			sb.append(" updates = ").append(SH.doubleQuote(getMultiCkboxValue(updatesField.getValue())));
 
-		if (SH.is(deleteField.getValue()))
-			sb.append(" delete = ").append(SH.doubleQuote(getMultiCkboxValue(deleteField.getValue())));
+		if (SH.is(deletesField.getValue()))
+			sb.append(" deletes = ").append(SH.doubleQuote(getMultiCkboxValue(deletesField.getValue())));
 
 		if (SH.is(whereField.getValue()))
 			sb.append(" where = ").append(SH.doubleQuote(whereField.getValue()));
@@ -322,14 +322,43 @@ public class AmiCenterManagerTriggerEditor_RelayTrigger extends AmiCenterManager
 	}
 
 	public void onTargetTableColumnsChanged() {
-		this.insertField.clear();
-		this.updateField.clear();
-		this.deleteField.clear();
+		this.insertsField.clear();
+		this.updatesField.clear();
+		this.deletesField.clear();
 		for (String targetCol : this.targetTableColumns) {
-			this.insertField.addOption(targetCol, targetCol);
-			this.updateField.addOption(targetCol, targetCol);
-			this.deleteField.addOption(targetCol, targetCol);
+			this.insertsField.addOption(targetCol, targetCol);
+			this.updatesField.addOption(targetCol, targetCol);
+			this.deletesField.addOption(targetCol, targetCol);
 		}
+	}
+
+	@Override
+	public FormPortletField<?> getFieldByName(String name) {
+		if ("host".equals(name))
+			return this.hostField;
+		if ("port".equals(name))
+			return this.portField;
+		if ("login".equals(name))
+			return this.loginField;
+		if ("keystoreFile".equals(name))
+			return this.keystoreFileField;
+		if ("keystorePass".equals(name))
+			return this.keystorePassField;
+		if ("target".equals(name))
+			return this.targetField;
+		if ("inserts".equals(name))
+			return this.insertsField;
+		if ("updates".equals(name))
+			return this.updatesField;
+		if ("deletes".equals(name))
+			return this.deletesField;
+		if ("derivedValues".equals(name))
+			return this.derivedValuesField;
+		if ("where".equals(name))
+			return this.whereField;
+
+		throw new NullPointerException("No such name:" + name);
+
 	}
 
 	//The abilities to query the backend

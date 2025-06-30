@@ -5,6 +5,7 @@ import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerAbstractEditCenterObjectPortlet;
 import com.f1.suite.web.portal.PortletConfig;
+import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
 import com.f1.utils.SH;
 
@@ -138,6 +139,12 @@ public class AmiCenterManagerTriggerEditor_Relay extends AmiCenterManagerAbstrac
 			sb.append(" where = ").append(SH.doubleQuote(whereField.getValue()));
 
 		return sb.toString();
+	}
+
+	@Override
+	public FormPortletField<?> getFieldByName(String name) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
