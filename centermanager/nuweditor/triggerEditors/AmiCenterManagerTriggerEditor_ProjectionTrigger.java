@@ -60,10 +60,11 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 		allowExternalUpdatesField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
 				+ "If true, then other processes (i.e triggers, UPDATEs) are allowed to perform UPDATEs on the target table." + "<br>"
 				+ " Please use precaution when using this feature, since updating cells controlled by the aggregate trigger will result into an undesirable state.");
+		allowExternalUpdatesField.setLeftPosPx(185).setTopPosPx(40);
 
 		wheresField = form.addField(new FormPortletTextField(AmiCenterManagerUtils.formatRequiredField("wheres")));
 		wheresField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
-		wheresField.setLeftPosPx(FORM_LEFT_POSITION).setWidth(600).setHeight(25).setTopPosPx(50);
+		wheresField.setLeftPosPx(FORM_LEFT_POSITION).setWidth(600).setHeight(25).setTopPosPx(90);
 		wheresField.setHelp("A comma-delimited list of boolean expressions that must all be true on a source table's row in order for it to be projected into the target table:"
 				+ "<br>" + "<b><i style=\"color:blue\">expression_on_sourceTableColumns,[ expression_on_sourceTableColumns ...]</i></b>");
 		wheresField.setHasButton(true);

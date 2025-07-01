@@ -50,7 +50,7 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 		allowExternalUpdatesField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
 				+ "If true, then other processes (i.e triggers, UPDATEs) are allowed to perform UPDATEs on the target table." + "<br>"
 				+ " Please use precaution when using this feature, since updating cells controlled by the aggregate trigger will result into an undesirable state.");
-
+		allowExternalUpdatesField.setLeftPosPx(185).setTopPosPx(40);
 		this.groupByEditor = new AmiCenterManagerTriggerEditor_AggregateGroupByEditor(generateConfig(), this);
 		this.selectsEditor = new AmiCenterManagerTriggerEditor_AggregateSelectEditor(generateConfig(), this);
 
