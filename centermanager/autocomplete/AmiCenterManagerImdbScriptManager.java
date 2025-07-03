@@ -17,6 +17,7 @@ import com.f1.utils.sql.SqlProcessor;
 import com.f1.utils.structs.table.derived.BasicMethodFactory;
 import com.f1.utils.structs.table.derived.ThreadSafeMethodFactoryManager;
 
+//keep, add to AmiWebFormPortletAmiScriptField
 public class AmiCenterManagerImdbScriptManager {
 	private static final Logger log = LH.get();
 	final private AmiWebService service;

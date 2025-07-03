@@ -295,4 +295,13 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 		request.setQuery(query);
 		service.sendRequestToBackend(this, request);
 	}
+
+	@Override
+	public void enableEdit(boolean enable) {
+		typeField.setDisabled(!enable);
+		onField.setDisabled(!enable);
+		getFieldByName("selects").setDisabled(!enable);
+		for (FormPortletField<?> fpf : this.selectsEditor.getFormFields())
+			fpf.setDisabled(!enable);
+	}
 }

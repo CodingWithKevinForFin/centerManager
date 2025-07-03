@@ -3,20 +3,17 @@ package com.f1.ami.web.centermanager.nuweditor;
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
-import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.base.Action;
 import com.f1.container.ResultMessage;
 import com.f1.suite.web.portal.PortletConfig;
-import com.f1.suite.web.portal.PortletManager;
-import com.f1.suite.web.portal.impl.ConfirmDialogPortlet;
 import com.f1.suite.web.portal.impl.GridPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortletButton;
+import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
 import com.f1.suite.web.portal.impl.form.FormPortletContextMenuFactory;
 import com.f1.suite.web.portal.impl.form.FormPortletContextMenuListener;
 import com.f1.suite.web.portal.impl.form.FormPortletListener;
-import com.f1.suite.web.portal.style.PortletStyleManager_Dialog;
 import com.f1.utils.SH;
 import com.f1.utils.converter.json2.ObjectToJsonConverter;
 
@@ -25,13 +22,13 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 	public static final int DEFAULT_ROWHEIGHT = 25;
 	public static final int DEFAULT_LEFTPOS = 75; //164
 	public static final int DEFAULT_Y_SPACING = 10;
-	public static final int DEFAULT_X_SPACING = 65;
+	public static final int DEFAULT_X_SPACING = 45;
 	public static final int DEFAULT_TOPPOS = DEFAULT_Y_SPACING;
 
 	//Width consts
-	public static final int NAME_WIDTH = 130;
+	public static final int NAME_WIDTH = 250;
 	public static final int TYPE_WIDTH = 100;
-	public static final int PRIORITY_WIDTH = 100;
+	public static final int PRIORITY_WIDTH = 50;
 	public static final int ON_WIDTH = 700;
 	public static final int TIMEOUT_WIDTH = 100;
 	public static final int LIMIT_WIDTH = 100;
@@ -50,11 +47,11 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 
 	//buttons
 	final protected FormPortlet buttonsFp;
-	private final FormPortletButton submitButton;
-	private final FormPortletButton cancelButton;
-	private final FormPortletButton previewButton;
-	private final FormPortletButton diffButton;
-	private final FormPortletButton importExportButton;
+	protected final FormPortletButton submitButton;
+	protected final FormPortletButton cancelButton;
+	//private final FormPortletButton previewButton;
+	protected final FormPortletButton diffButton;
+	protected final FormPortletButton importExportButton;
 	protected final static ObjectToJsonConverter JSON_CONVERTER = new ObjectToJsonConverter();
 	static {
 		JSON_CONVERTER.setIgnoreUnconvertable(true);
@@ -66,9 +63,18 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 	//fields needed to query the backend
 	protected long sessionId = -1;
 
+	//enable editing
+	protected final FormPortletCheckboxField enableEditingCheckbox;
+
 	public AmiCenterManagerAbstractEditCenterObjectPortlet(PortletConfig config, boolean isAdd) {
 		super(config);
 		this.isAdd = isAdd;
+		this.enableEditingCheckbox = isAdd ? null : new FormPortletCheckboxField("<i>Enable Editing</i>");
+		if (!isAdd) {
+			this.enableEditingCheckbox.setDefaultValue(false);
+			this.enableEditingCheckbox.setBgColor("#bab0b0");
+		}
+
 		this.service = AmiWebUtils.getService(config.getPortletManager());
 
 		this.buttonsFp = new FormPortlet(generateConfig());
@@ -79,7 +85,7 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 
 		this.submitButton = buttonsFp.addButton(new FormPortletButton("Submit"));
 		this.cancelButton = buttonsFp.addButton(new FormPortletButton("Cancel"));
-		this.previewButton = buttonsFp.addButton(new FormPortletButton("Preview"));
+		//this.previewButton = buttonsFp.addButton(new FormPortletButton("Preview"));
 		this.diffButton = buttonsFp.addButton(new FormPortletButton("Diff"));
 		this.importExportButton = buttonsFp.addButton(new FormPortletButton("Import/Export"));
 	}
@@ -89,17 +95,18 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		if (button == this.cancelButton) {
 			close();
 			return;
-		} else if (button == this.previewButton) {
-			PortletStyleManager_Dialog dp = service.getPortletManager().getStyleManager().getDialogStyle();
-			final PortletManager portletManager = service.getPortletManager();
-			ConfirmDialogPortlet cdp = new ConfirmDialogPortlet(portletManager.generateConfig(), AmiCenterManagerUtils.formatPreviewScript(previewScript()),
-					ConfirmDialogPortlet.TYPE_MESSAGE);
-			portletManager.showDialog("Script", cdp, dp.getDialogWidth(), dp.getDialogHeight());
 		} else if (button == this.importExportButton) {
 			getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerScriptExportPortlet(generateConfig(), this));
 		} else if (button == this.submitButton) {
 			//getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerTriggerEditor_SelectEditor(generateConfig()), 800, 750);
 		}
+		//		else if (button == this.previewButton) {
+		//			PortletStyleManager_Dialog dp = service.getPortletManager().getStyleManager().getDialogStyle();
+		//			final PortletManager portletManager = service.getPortletManager();
+		//			ConfirmDialogPortlet cdp = new ConfirmDialogPortlet(portletManager.generateConfig(), AmiCenterManagerUtils.formatPreviewScript(previewScript()),
+		//					ConfirmDialogPortlet.TYPE_MESSAGE);
+		//			portletManager.showDialog("Script", cdp, dp.getDialogWidth(), dp.getDialogHeight());
+		//		} 
 
 	}
 
@@ -154,5 +161,7 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 	abstract public String exportToText();
 
 	abstract public void importFromText(String text, StringBuilder sink);
+
+	//abstract public void enableEdit(boolean enable);
 
 }

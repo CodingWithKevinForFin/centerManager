@@ -250,4 +250,12 @@ public class AmiCenterManagerTriggerEditor_DecorateTrigger extends AmiCenterMana
 		service.sendRequestToBackend(this, request);
 	}
 
+	@Override
+	public void enableEdit(boolean enable) {
+		onField.setDisabled(!enable);
+		getFieldByName("selects").setDisabled(!enable);
+		for (FormPortletField<?> fpf : this.selectsEditor.getFormFields())
+			fpf.setDisabled(!enable);
+	}
+
 }

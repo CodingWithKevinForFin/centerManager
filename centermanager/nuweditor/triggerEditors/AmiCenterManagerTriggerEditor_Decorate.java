@@ -60,4 +60,10 @@ public class AmiCenterManagerTriggerEditor_Decorate extends AmiCenterManagerAbst
 		return null;
 	}
 
+	@Override
+	public void enableEdit(boolean enable) {
+		// TODO Auto-generated method stub
+
+	}
+
 }

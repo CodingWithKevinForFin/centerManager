@@ -147,4 +147,10 @@ public class AmiCenterManagerTriggerEditor_Relay extends AmiCenterManagerAbstrac
 		return null;
 	}
 
+	@Override
+	public void enableEdit(boolean enable) {
+		// TODO Auto-generated method stub
+
+	}
+
 }

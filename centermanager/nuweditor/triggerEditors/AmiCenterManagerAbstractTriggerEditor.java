@@ -17,4 +17,6 @@ public abstract class AmiCenterManagerAbstractTriggerEditor extends GridPortlet 
 
 	abstract public FormPortletField<?> getFieldByName(String name);
 
+	abstract public void enableEdit(boolean enable);
+
 }

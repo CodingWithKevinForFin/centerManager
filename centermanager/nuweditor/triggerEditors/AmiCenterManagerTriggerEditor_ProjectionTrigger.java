@@ -294,4 +294,13 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 		service.sendRequestToBackend(this, request);
 	}
 
+	@Override
+	public void enableEdit(boolean enable) {
+		allowExternalUpdatesField.setDisabled(!enable);
+		wheresField.setDisabled(!enable);
+		getFieldByName("selects").setDisabled(!enable);
+		for (FormPortletField<?> fpf : this.selectsEditor.getFormFields())
+			fpf.setDisabled(!enable);
+	}
+
 }

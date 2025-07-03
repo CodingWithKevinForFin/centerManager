@@ -453,5 +453,19 @@ public class AmiCenterManagerTriggerEditor_RelayTrigger extends AmiCenterManager
 		// TODO Auto-generated method stub
 
 	}
+	@Override
+	public void enableEdit(boolean enable) {
+		hostField.setDisabled(!enable);
+		portField.setDisabled(!enable);
+		loginField.setDisabled(!enable);
+		keystorePassField.setDisabled(!enable);
+		keystoreFileField.setDisabled(!enable);
+		targetField.setDisabled(!enable);
+		insertsField.setDisabled(!enable);
+		updatesField.setDisabled(!enable);
+		deletesField.setDisabled(!enable);
+		whereField.setDisabled(!enable);
+		derivedValuesField.setDisabled(!enable);
+	}
 
 }

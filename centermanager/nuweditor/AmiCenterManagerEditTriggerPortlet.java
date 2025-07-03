@@ -40,6 +40,8 @@ import com.f1.suite.web.portal.impl.form.FormPortletTextAreaField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
 import com.f1.utils.CH;
 import com.f1.utils.SH;
+import com.f1.utils.casters.Caster_String;
+import com.f1.utils.concurrent.IdentityHashSet;
 import com.f1.utils.string.sqlnode.AdminNode;
 
 public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstractEditCenterObjectPortlet {
@@ -69,6 +71,10 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 	final private AmiCenterManagerTriggerEditor_JoinTrigger joinEditor;
 	final private AmiCenterManagerTriggerEditor_DecorateTrigger decorateEditor;
 	final private AmiCenterManagerTriggerEditor_RelayTrigger relayEditor;
+
+	final private IdentityHashSet<FormPortletTextField> editedFields = new IdentityHashSet<FormPortletTextField>();
+	final private IdentityHashSet<FormPortletCheckboxField> editedCheckboxFields = new IdentityHashSet<FormPortletCheckboxField>();
+	final private IdentityHashSet<FormPortletSelectField> editedSelectFields = new IdentityHashSet<FormPortletSelectField>();
 
 	//trigger-type-specific editor
 	private InnerPortlet editorPanel;//all the type-specific fields excluding amiscript fields
@@ -119,12 +125,17 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		triggerPriorityField = this.form.addField(new FormPortletTextField("PRIORITY"));
 		triggerPriorityField.setName("triggerPriority");
 		triggerPriorityField.setHelp("a number, timers with lowest value are executed first. Only considered when two or more timers have the same exact scheduled time");
-		triggerPriorityField.setWidth(PRIORITY_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + (int) (DEFAULT_X_SPACING * 3.5))
+		triggerPriorityField.setWidth(PRIORITY_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + (int) (DEFAULT_X_SPACING * 3))
 				.setTopPosPx(DEFAULT_TOPPOS);
 
-		//by default
-		editorPanel.setPortlet(amiscriptEditor);
-		curEditor = amiscriptEditor;
+		if (!isAdd) {
+			this.form.addField(enableEditingCheckbox);
+			enableEditingCheckbox.setWidth(20).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + (int) (DEFAULT_X_SPACING * 3) + 180)
+					.setTopPosPx(DEFAULT_TOPPOS);
+		} else {
+			editorPanel.setPortlet(amiscriptEditor);
+			curEditor = amiscriptEditor;
+		}
 
 		this.addChild(formAndTriggerConfigGrid, 0, 0);
 		this.addChild(buttonsFp, 0, 1);
@@ -132,6 +143,15 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		setRowSize(1, buttonsFp.getButtonPanelHeight());
 		this.form.addFormPortletListener(this);
 		sendQueryToBackend("SELECT TableName FROM SHOW TABLES WHERE DefinedBy==\"USER\";");
+	}
+
+	public AmiCenterManagerEditTriggerPortlet(PortletConfig config, String triggerSql) {
+		this(config, false);
+		//never allow editing trigger type
+		this.triggerTypeField.setDisabled(true);
+		this.importFromText(triggerSql, new StringBuilder());
+		//by default editing is disabled
+		enableEdit(false);
 	}
 
 	private void initTriggerTypes() {
@@ -239,7 +259,35 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 					} else
 						relayEditor.resetDependency();
 			}
+		} else if (field == this.enableEditingCheckbox) {
+			enableEdit(this.enableEditingCheckbox.getBooleanValue());
 		}
+	}
+
+	private void onFieldChanged(FormPortletField<?> field) {
+		boolean hadNoChanges = this.editedFields.isEmpty() && this.editedSelectFields.isEmpty() && this.editedCheckboxFields.isEmpty();
+		String value = null;
+		Object rawValue = field.getValue();
+		if (rawValue instanceof String)
+			value = SH.trim((String) rawValue);
+		else if (rawValue instanceof Boolean) {
+			value = Caster_String.INSTANCE.cast(rawValue);
+		}
+
+		boolean hasNoChanges = this.editedFields.isEmpty() && this.editedSelectFields.isEmpty() && this.editedCheckboxFields.isEmpty();
+		if (hasNoChanges != hadNoChanges) {
+			this.submitButton.setEnabled(!hasNoChanges);
+			this.cancelButton.setEnabled(!hasNoChanges);
+		}
+	}
+
+	public void enableEdit(boolean enable) {
+		for (FormPortletField<?> fpf : this.form.getFormFields()) {
+			if (fpf != this.enableEditingCheckbox)
+				fpf.setDisabled(!enable);
+		}
+		//enable/disable all the option fields
+		this.curEditor.enableEdit(enable);
 
 	}
 

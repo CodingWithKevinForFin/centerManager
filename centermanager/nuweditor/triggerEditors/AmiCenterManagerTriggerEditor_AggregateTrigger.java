@@ -121,6 +121,14 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 			return this.selectsEditor.getOutputField();
 		if ("allowExternalUpdates".equals(name))
 			return this.allowExternalUpdatesField;
+		if ("groupBys_targetColumnField".equals(name))
+			return this.groupByEditor.getTargetColumnField();
+		if ("groupBys_sourceColumnField".equals(name))
+			return this.groupByEditor.getSourceColumnField();
+		if ("groupBys_addButtonField".equals(name))
+			return this.groupByEditor.getAddButton();
+		if ("groupBys_clearButtonField".equals(name))
+			return this.groupByEditor.getClearButton();
 		throw new NullPointerException("No such name:" + name);
 
 	}
@@ -182,6 +190,17 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 			return;
 		request.setQuery(query);
 		service.sendRequestToBackend(this, request);
+	}
+
+	@Override
+	public void enableEdit(boolean enable) {
+		allowExternalUpdatesField.setDisabled(!enable);
+		getFieldByName("groupBys").setDisabled(!enable);
+		getFieldByName("selects").setDisabled(!enable);
+		for (FormPortletField<?> fpf : this.groupByEditor.getFormFields())
+			fpf.setDisabled(!enable);
+		for (FormPortletField<?> fpf : this.selectsEditor.getFormFields())
+			fpf.setDisabled(!enable);
 	}
 
 }

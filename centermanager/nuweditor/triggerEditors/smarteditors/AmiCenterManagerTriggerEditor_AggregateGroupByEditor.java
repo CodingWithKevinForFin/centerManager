@@ -1,7 +1,5 @@
 package com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,9 +31,6 @@ public class AmiCenterManagerTriggerEditor_AggregateGroupByEditor extends FormPo
 	final private FormPortletButtonField addButton;
 	final private FormPortletButtonField clearButton;
 
-	private List<FormPortletSelectField<String>> targetColumns;
-	private List<FormPortletSelectField<String>> sourceColumns;
-
 	private AmiCenterManagerTriggerEditor_AggregateTrigger owner;
 
 	private static final int COLNAME_WIDTH = 200; //60
@@ -48,8 +43,6 @@ public class AmiCenterManagerTriggerEditor_AggregateGroupByEditor extends FormPo
 	public AmiCenterManagerTriggerEditor_AggregateGroupByEditor(PortletConfig config, AmiCenterManagerTriggerEditor_AggregateTrigger owner) {
 		super(config);
 		this.owner = owner;
-		this.targetColumns = new ArrayList<FormPortletSelectField<String>>();
-		this.sourceColumns = new ArrayList<FormPortletSelectField<String>>();
 		this.groupByTitleField = this.addField(new FormPortletTitleField("groupBy"));
 		this.groupByTitleField.setLeftPosPx(400);
 		this.groupByTitleField.setHelp("A comma delimited list of expressions to group rows by, each expression being of the form:" + "<br>"
@@ -140,9 +133,25 @@ public class AmiCenterManagerTriggerEditor_AggregateGroupByEditor extends FormPo
 	public String getOutput() {
 		return outputField.getValue();
 	}
-
+	//field getters
 	public FormPortletField<?> getOutputField() {
 		return this.outputField;
+	}
+
+	public FormPortletField<?> getTargetColumnField() {
+		return this.targetColumnField;
+	}
+
+	public FormPortletField<?> getSourceColumnField() {
+		return this.sourceColumnField;
+	}
+
+	public FormPortletButtonField getAddButton() {
+		return this.addButton;
+	}
+
+	public FormPortletButtonField getClearButton() {
+		return this.clearButton;
 	}
 
 	public void onTargetTableColumnsChanged() {

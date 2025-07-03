@@ -63,4 +63,10 @@ public class AmiCenterManagerTriggerEditor_Projection extends AmiCenterManagerAb
 		return null;
 	}
 
+	@Override
+	public void enableEdit(boolean enable) {
+		// TODO Auto-generated method stub
+
+	}
+
 }

@@ -69,4 +69,10 @@ public class AmiCenterManagerTriggerEditor_Join extends AmiCenterManagerAbstract
 		return null;
 	}
 
+	@Override
+	public void enableEdit(boolean enable) {
+		// TODO Auto-generated method stub
+
+	}
+
 }
