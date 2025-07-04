@@ -468,4 +468,8 @@ public class AmiCenterManagerTriggerEditor_RelayTrigger extends AmiCenterManager
 		derivedValuesField.setDisabled(!enable);
 	}
 
+	@Override
+	public Set<? extends FormPortlet> getSmartEditors() {
+		return CH.s();
+	}
 }

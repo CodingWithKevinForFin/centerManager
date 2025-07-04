@@ -7,6 +7,7 @@ import java.util.Set;
 
 import com.f1.ami.web.AmiWebMenuUtils;
 import com.f1.ami.web.AmiWebUtils;
+import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_ProjectionTrigger;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenu;
@@ -75,9 +76,11 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 		targetColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
 		targetColumnField.setLeftPosPx(DEFAULT_LEFTPOS);
 		targetColumnField.setTopPosPx(DEFAULT_TOPPOS * 2);
+		targetColumnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 
 		selectExpressionField = this.addField(new FormPortletTextField(""));
 		selectExpressionField.setHasButton(true);
+		selectExpressionField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 		selectExpressionField.setCorrelationData(new Formula() {
 
 			@Override
@@ -129,6 +132,7 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 
 		this.outputField = this.addField(new FormPortletTextAreaField("Output"));
 		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
+		this.outputField.setName("output");
 
 		this.addFormPortletListener(this);
 		this.addMenuListener(this);

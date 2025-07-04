@@ -27,7 +27,7 @@ public interface AmiCenterEntityConsts {
 
 	//general
 	public static final String GROUP_NAME_REQUIRED_FIELD = "GROUP_REQUIRED";
-
+	public static final String GROUP_NAME_SKIP_ONFIELDCHANGED = "GROUP_SKIP_ONFIELDCHANGED";
 	//Null
 	public static final String ENTITY_TYPE_NULL = "<NULL>";
 	public static final short ENTITY_TYPE_CODE_NULL = -1;

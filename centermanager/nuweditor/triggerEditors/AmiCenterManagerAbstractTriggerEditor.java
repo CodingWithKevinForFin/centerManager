@@ -1,5 +1,7 @@
 package com.f1.ami.web.centermanager.nuweditor.triggerEditors;
 
+import java.util.Set;
+
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.GridPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortlet;
@@ -13,10 +15,16 @@ public abstract class AmiCenterManagerAbstractTriggerEditor extends GridPortlet 
 		form = new FormPortlet(generateConfig());
 	}
 
+	public FormPortlet getForm() {
+		return this.form;
+	}
+
 	abstract public String getKeyValuePairs();
 
 	abstract public FormPortletField<?> getFieldByName(String name);
 
 	abstract public void enableEdit(boolean enable);
+
+	abstract public Set<? extends FormPortlet> getSmartEditors();
 
 }

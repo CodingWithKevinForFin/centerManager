@@ -6,6 +6,7 @@ import java.util.Set;
 import com.f1.ami.web.AmiWebMenuUtils;
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
+import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_JoinTrigger;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenu;
@@ -67,6 +68,7 @@ public class AmiCenterManagerTriggerEditor_JoinSelectEditor extends FormPortlet 
 		targetColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
 		targetColumnField.setLeftPosPx(DEFAULT_LEFTPOS);
 		targetColumnField.setTopPosPx(DEFAULT_TOPPOS * 2);
+		targetColumnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 
 		sourceColumnField = this.addField(new FormPortletTextAreaField("=&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"));
 		sourceColumnField.setWidthPx(COLNAME_WIDTH * 3);
@@ -75,6 +77,7 @@ public class AmiCenterManagerTriggerEditor_JoinSelectEditor extends FormPortlet 
 		sourceColumnField.setHeightPx(DEFAULT_ROWHEIGHT * 4);
 
 		sourceColumnField.setHasButton(true);
+		sourceColumnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 		sourceColumnField.setCorrelationData(new Formula() {
 			@Override
 			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
@@ -141,6 +144,7 @@ public class AmiCenterManagerTriggerEditor_JoinSelectEditor extends FormPortlet 
 
 		this.outputField = this.addField(new FormPortletTextAreaField("Output"));
 		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 4 + DEFAULT_ROWHEIGHT * 4).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
+		this.outputField.setName("output");
 
 		this.addFormPortletListener(this);
 		this.addMenuListener(this);

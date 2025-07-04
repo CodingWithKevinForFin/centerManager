@@ -15,6 +15,7 @@ import com.f1.base.Row;
 import com.f1.base.Table;
 import com.f1.suite.web.portal.PortletManager;
 import com.f1.suite.web.portal.impl.ConfirmDialogPortlet;
+import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.suite.web.portal.style.PortletStyleManager_Dialog;
 import com.f1.utils.OH;
 import com.f1.utils.SH;
@@ -832,5 +833,24 @@ public class AmiCenterManagerUtils {
 		String test = "{default_limit=2.0E8, product_limits=[{product_id=12345, limit=3.3E7}]}";
 		Map m = parseUseOptions(test);
 		System.out.println(m);
+	}
+
+	public static void formatFieldTitle(FormPortletField<?> field, boolean hasChanged) {
+		if (hasChanged)
+			field.setTitle(AmiCenterEntityConsts.CHANGED_FIELD_ANNOTATION_HTML + field.getTitle());
+		else
+			field.setTitle(field.getTitle().replace(AmiCenterEntityConsts.CHANGED_FIELD_ANNOTATION_HTML, ""));
+
+	}
+	//if a field is edited
+	public static void onFieldEdited(FormPortletField<?> field, boolean changed) {
+		if (changed) {
+			field.setCssStyle("_bg=#FFFFAA");
+			field.setTitle(AmiCenterEntityConsts.CHANGED_FIELD_ANNOTATION_HTML + field.getTitle());
+		} else {
+			field.setCssStyle("_bg=#FFFFFF");
+			field.setTitle(field.getTitle().replace(AmiCenterEntityConsts.CHANGED_FIELD_ANNOTATION_HTML, ""));
+		}
+
 	}
 }

@@ -303,4 +303,9 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 			fpf.setDisabled(!enable);
 	}
 
+	@Override
+	public Set<? extends FormPortlet> getSmartEditors() {
+		return CH.s(this.selectsEditor);
+	}
+
 }

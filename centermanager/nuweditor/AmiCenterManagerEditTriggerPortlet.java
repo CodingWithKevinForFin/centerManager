@@ -39,11 +39,16 @@ import com.f1.suite.web.portal.impl.form.FormPortletSelectField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextAreaField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
 import com.f1.utils.CH;
+import com.f1.utils.OH;
 import com.f1.utils.SH;
-import com.f1.utils.casters.Caster_String;
-import com.f1.utils.concurrent.IdentityHashSet;
 import com.f1.utils.string.sqlnode.AdminNode;
 
+/**
+ * EditTriggerPortlet<br>
+ * ->Form: all the config fields<br>
+ * ->TriggerEditor: all the trigger-type specific options<br>
+ * ->->SmartEditor: all the smart editors<br>
+ */
 public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstractEditCenterObjectPortlet {
 	public static final Set<String> COMMON_OPTIONS = CH.s("triggerName", "triggerOn", "triggerPriority", "triggerType");
 
@@ -71,10 +76,6 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 	final private AmiCenterManagerTriggerEditor_JoinTrigger joinEditor;
 	final private AmiCenterManagerTriggerEditor_DecorateTrigger decorateEditor;
 	final private AmiCenterManagerTriggerEditor_RelayTrigger relayEditor;
-
-	final private IdentityHashSet<FormPortletTextField> editedFields = new IdentityHashSet<FormPortletTextField>();
-	final private IdentityHashSet<FormPortletCheckboxField> editedCheckboxFields = new IdentityHashSet<FormPortletCheckboxField>();
-	final private IdentityHashSet<FormPortletSelectField> editedSelectFields = new IdentityHashSet<FormPortletSelectField>();
 
 	//trigger-type-specific editor
 	private InnerPortlet editorPanel;//all the type-specific fields excluding amiscript fields
@@ -150,6 +151,10 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		//never allow editing trigger type
 		this.triggerTypeField.setDisabled(true);
 		this.importFromText(triggerSql, new StringBuilder());
+		//add form portlet listener
+		this.curEditor.getForm().addFormPortletListener(this);
+		for (FormPortlet fp : this.curEditor.getSmartEditors())
+			fp.addFormPortletListener(this);
 		//by default editing is disabled
 		enableEdit(false);
 	}
@@ -197,14 +202,11 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 	@Override
 	public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void onContextMenu(FormPortlet portlet, String action, FormPortletField node) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -261,28 +263,17 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 			}
 		} else if (field == this.enableEditingCheckbox) {
 			enableEdit(this.enableEditingCheckbox.getBooleanValue());
-		}
-	}
-
-	private void onFieldChanged(FormPortletField<?> field) {
-		boolean hadNoChanges = this.editedFields.isEmpty() && this.editedSelectFields.isEmpty() && this.editedCheckboxFields.isEmpty();
-		String value = null;
-		Object rawValue = field.getValue();
-		if (rawValue instanceof String)
-			value = SH.trim((String) rawValue);
-		else if (rawValue instanceof Boolean) {
-			value = Caster_String.INSTANCE.cast(rawValue);
-		}
-
-		boolean hasNoChanges = this.editedFields.isEmpty() && this.editedSelectFields.isEmpty() && this.editedCheckboxFields.isEmpty();
-		if (hasNoChanges != hadNoChanges) {
-			this.submitButton.setEnabled(!hasNoChanges);
-			this.cancelButton.setEnabled(!hasNoChanges);
+		} else {
+			//other field changes go here
+			OH.assertTrue(!this.isAdd);
+			onFieldChanged(field);
 		}
 	}
 
 	public void enableEdit(boolean enable) {
 		for (FormPortletField<?> fpf : this.form.getFormFields()) {
+			if (fpf == this.triggerTypeField)
+				continue;
 			if (fpf != this.enableEditingCheckbox)
 				fpf.setDisabled(!enable);
 		}
@@ -344,14 +335,16 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		Map<String, String> triggerConfig = AmiCenterManagerUtils.parseAdminNode_Trigger(an);
 		String triggerType = triggerConfig.get("triggerType");
 		this.triggerTypeField.setValue(AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TRIGGER, SH.toUpperCase(triggerType)));
+		this.triggerTypeField.setCorrelationData(AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TRIGGER, SH.toUpperCase(triggerType)));
 		this.onFieldValueChanged(this.form, this.triggerTypeField, null);
 
 		for (Entry<String, String> e : triggerConfig.entrySet()) {
 			String key = e.getKey();
 			String value = e.getValue();
-			if ("triggerName".equals(key))
+			if ("triggerName".equals(key)) {
 				this.triggerNameField.setValue(value);
-			else if ("triggerType".equals(key)) {
+				this.triggerNameField.setCorrelationData(value);
+			} else if ("triggerType".equals(key)) {
 				continue;
 			} else if ("triggerOn".equals(key)) {
 				String[] l;
@@ -362,13 +355,15 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 					l = new String[] { value };
 				try {
 					this.triggerOnField.setValue(CH.ls(l));
+					this.triggerOnField.setCorrelationData(CH.ls(l));
 				} catch (Exception ex) {
 					AmiCenterManagerUtils.popDialog(service, ex.getMessage(), "Import Error");
 				}
 
-			} else if ("triggerPriority".equals(key))
+			} else if ("triggerPriority".equals(key)) {
 				this.triggerPriorityField.setValue(value);
-			else {//all the use options go here
+				this.triggerPriorityField.setCorrelationData(value);
+			} else {//all the use options go here
 					//1. locate the field
 				FormPortletField<?> fpf = null;
 				if (COMMON_OPTIONS.contains(key))
@@ -383,17 +378,31 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 				if (fpf == null)
 					throw new NullPointerException("cannot find the field for name:" + key);
 				//2. set the value for the field depending on the field type
-				if (fpf instanceof FormPortletTextField)
+				if (fpf instanceof FormPortletTextField) {
 					((FormPortletTextField) fpf).setValue(value);
-				else if (fpf instanceof FormPortletTextAreaField) {
+					((FormPortletTextField) fpf).setCorrelationData(value);
+				} else if (fpf instanceof FormPortletTextAreaField) {
 					((FormPortletTextAreaField) fpf).setValue(value);
+					((FormPortletTextAreaField) fpf).setCorrelationData(value);
 				} else if (fpf instanceof AmiWebFormPortletAmiScriptField) {
 					((AmiWebFormPortletAmiScriptField) fpf).setValue(value);
+					((AmiWebFormPortletAmiScriptField) fpf).setCorrelationData(value);
 				} else if (fpf instanceof FormPortletCheckboxField) {
-					if ("true".equals(value))
+					if ("true".equals(value)) {
 						((FormPortletCheckboxField) fpf).setValue(true);
-					else
+						((FormPortletCheckboxField) fpf).setCorrelationData(true);
+					} else {
 						((FormPortletCheckboxField) fpf).setValue(false);
+						((FormPortletCheckboxField) fpf).setCorrelationData(false);
+					}
+
+				} else if (fpf instanceof FormPortletSelectField) {
+					String fieldName = fpf.getName();
+					if (AmiCenterManagerTriggerEditor_JoinTrigger.TYPE_FIELD_VARNAME.equals(fieldName)) {
+						((FormPortletSelectField) fpf).setValue(AmiCenterManagerUtils.toJoinTriggerTypeCode(value));
+						((FormPortletSelectField) fpf).setCorrelationData(AmiCenterManagerUtils.toJoinTriggerTypeCode(value));
+					}
+
 				} else if (fpf instanceof FormPortletMultiCheckboxField) {
 					//parse value
 					String[] l;
@@ -405,9 +414,12 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 					//						continue;
 					if ("target".equals(key)) {
 						((FormPortletMultiCheckboxField) fpf).setValueNoThrow(CH.ls(l));
+						((FormPortletMultiCheckboxField) fpf).setCorrelationData(CH.ls(l));
 						this.relayEditor.onFieldValueChanged(null, fpf, null);
-					} else
+					} else {
 						((FormPortletMultiCheckboxField) fpf).setValueNoThrow(CH.ls(l));
+						((FormPortletMultiCheckboxField) fpf).setCorrelationData(CH.ls(l));
+					}
 
 				}
 

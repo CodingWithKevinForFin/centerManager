@@ -34,6 +34,7 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 	private static final int FORM_WIDTH = 550;
 	private static final int FORM_HEIGHT = 300;
 
+	public static final String TYPE_FIELD_VARNAME = "Join_Type";
 	final private FormPortletSelectField<Short> typeField;
 	//menu should contain tablenames(left and right), tablecolumn(left and right)
 	final private FormPortletTextField onField;
@@ -60,6 +61,7 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 		typeField.addOption(AmiCenterEntityConsts.TRIGGER_JOIN_TYPE_CODE_LEFT_ONLY, AmiCenterEntityConsts.TRIGGER_JOIN_TYPE_LEFT_ONLY);
 		typeField.addOption(AmiCenterEntityConsts.TRIGGER_JOIN_TYPE_CODE_RIGHT_ONLY, AmiCenterEntityConsts.TRIGGER_JOIN_TYPE_RIGHT_ONLY);
 		typeField.addOption(AmiCenterEntityConsts.TRIGGER_JOIN_TYPE_CODE_OUTER_ONLY, AmiCenterEntityConsts.TRIGGER_JOIN_TYPE_OUTER_ONLY);
+		typeField.setName(TYPE_FIELD_VARNAME);
 		typeField.setDefaultValue(AmiCenterEntityConsts.TRIGGER_JOIN_TYPE_CODE_INNER);
 		typeField.setHelp("How to join the left and right tables");
 		typeField.setLeftPosPx(80).setWidth(200).setHeight(20).setTopPosPx(20);
@@ -303,5 +305,10 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 		getFieldByName("selects").setDisabled(!enable);
 		for (FormPortletField<?> fpf : this.selectsEditor.getFormFields())
 			fpf.setDisabled(!enable);
+	}
+
+	@Override
+	public Set<? extends FormPortlet> getSmartEditors() {
+		return CH.s(this.selectsEditor);
 	}
 }

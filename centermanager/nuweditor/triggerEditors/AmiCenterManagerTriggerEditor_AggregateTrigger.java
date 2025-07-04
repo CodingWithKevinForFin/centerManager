@@ -16,8 +16,10 @@ import com.f1.base.Row;
 import com.f1.base.Table;
 import com.f1.container.ResultMessage;
 import com.f1.suite.web.portal.PortletConfig;
+import com.f1.suite.web.portal.impl.form.FormPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
 import com.f1.suite.web.portal.impl.form.FormPortletField;
+import com.f1.utils.CH;
 import com.f1.utils.SH;
 
 public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterManagerAbstractTriggerEditor {
@@ -201,6 +203,11 @@ public class AmiCenterManagerTriggerEditor_AggregateTrigger extends AmiCenterMan
 			fpf.setDisabled(!enable);
 		for (FormPortletField<?> fpf : this.selectsEditor.getFormFields())
 			fpf.setDisabled(!enable);
+	}
+
+	@Override
+	public Set<? extends FormPortlet> getSmartEditors() {
+		return CH.s(this.selectsEditor, this.groupByEditor);
 	}
 
 }

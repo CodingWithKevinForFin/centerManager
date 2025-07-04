@@ -1,8 +1,13 @@
 package com.f1.ami.web.centermanager.nuweditor;
 
+import java.util.Iterator;
+import java.util.Set;
+
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
+import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
+import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.base.Action;
 import com.f1.container.ResultMessage;
@@ -13,8 +18,12 @@ import com.f1.suite.web.portal.impl.form.FormPortletButton;
 import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
 import com.f1.suite.web.portal.impl.form.FormPortletContextMenuFactory;
 import com.f1.suite.web.portal.impl.form.FormPortletContextMenuListener;
+import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.suite.web.portal.impl.form.FormPortletListener;
+import com.f1.utils.CH;
+import com.f1.utils.OH;
 import com.f1.utils.SH;
+import com.f1.utils.concurrent.IdentityHashSet;
 import com.f1.utils.converter.json2.ObjectToJsonConverter;
 
 public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends GridPortlet
@@ -49,6 +58,7 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 	final protected FormPortlet buttonsFp;
 	protected final FormPortletButton submitButton;
 	protected final FormPortletButton cancelButton;
+	protected final FormPortletButton resetButton;
 	//private final FormPortletButton previewButton;
 	protected final FormPortletButton diffButton;
 	protected final FormPortletButton importExportButton;
@@ -65,6 +75,7 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 
 	//enable editing
 	protected final FormPortletCheckboxField enableEditingCheckbox;
+	protected final IdentityHashSet<FormPortletField> editedFields = new IdentityHashSet<FormPortletField>();
 
 	public AmiCenterManagerAbstractEditCenterObjectPortlet(PortletConfig config, boolean isAdd) {
 		super(config);
@@ -87,6 +98,10 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		this.cancelButton = buttonsFp.addButton(new FormPortletButton("Cancel"));
 		//this.previewButton = buttonsFp.addButton(new FormPortletButton("Preview"));
 		this.diffButton = buttonsFp.addButton(new FormPortletButton("Diff"));
+		if (!isAdd)
+			this.resetButton = buttonsFp.addButton(new FormPortletButton("Reset"));
+		else
+			this.resetButton = null;
 		this.importExportButton = buttonsFp.addButton(new FormPortletButton("Import/Export"));
 	}
 
@@ -99,6 +114,8 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 			getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerScriptExportPortlet(generateConfig(), this));
 		} else if (button == this.submitButton) {
 			//getManager().showDialog("Export/Import Editor Script", new AmiCenterManagerTriggerEditor_SelectEditor(generateConfig()), 800, 750);
+		} else if (button == this.resetButton) {
+			revertEdit();
 		}
 		//		else if (button == this.previewButton) {
 		//			PortletStyleManager_Dialog dp = service.getPortletManager().getStyleManager().getDialogStyle();
@@ -108,6 +125,34 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		//			portletManager.showDialog("Script", cdp, dp.getDialogWidth(), dp.getDialogHeight());
 		//		} 
 
+	}
+
+	protected void revertEdit() {
+		for (FormPortletField i : CH.l(this.editedFields)) {
+			Object orig = i.getCorrelationData();
+			i.setValue(orig);
+			onFieldChanged(i);
+		}
+	}
+
+	protected void onFieldChanged(FormPortletField<?> field) {
+		if (AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED.equals(field.getGroupName()))
+			return;
+		boolean hadNoChanges = this.editedFields.isEmpty();
+		Object orig = field.getCorrelationData();
+		Object now = field.getValue();
+		if (OH.eq(orig, now) || (SH.isnt(now) && orig == null)) {
+			this.editedFields.remove(field);
+			AmiCenterManagerUtils.onFieldEdited(field, false);
+		} else {
+			this.editedFields.add(field);
+			AmiCenterManagerUtils.onFieldEdited(field, true);
+		}
+		boolean hasNoChanges = this.editedFields.isEmpty();
+		if (hasNoChanges != hadNoChanges) {
+			this.submitButton.setEnabled(!hasNoChanges);
+			this.cancelButton.setEnabled(!hasNoChanges);
+		}
 	}
 
 	public String previewScript() {
@@ -154,6 +199,17 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		service.sendRequestToBackend(this, request);
 	}
 
+	public static String setToString(Set<String> source) {
+		StringBuilder sb = new StringBuilder();
+		Iterator<String> i = source.iterator();
+		while (i.hasNext()) {
+			sb.append(i.next());
+			if (i.hasNext())
+				sb.append(',');
+		}
+		return sb.toString();
+	}
+
 	abstract public String prepareUseClause();
 
 	abstract public String preparePreUseClause();
@@ -161,7 +217,5 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 	abstract public String exportToText();
 
 	abstract public void importFromText(String text, StringBuilder sink);
-
-	//abstract public void enableEdit(boolean enable);
 
 }

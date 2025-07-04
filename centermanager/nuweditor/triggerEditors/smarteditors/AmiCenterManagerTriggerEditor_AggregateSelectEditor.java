@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.f1.ami.web.AmiWebMenuUtils;
 import com.f1.ami.web.AmiWebUtils;
+import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AggregateTrigger;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenu;
@@ -74,15 +75,18 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 		targetColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
 		targetColumnField.setLeftPosPx(DEFAULT_LEFTPOS);
 		targetColumnField.setTopPosPx(DEFAULT_TOPPOS * 2);
+		targetColumnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 
 		aggFuncField.setWidthPx(100);
 		aggFuncField.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS);
 		aggFuncField.setTopPosPx(DEFAULT_TOPPOS * 2);
 		//		sourceColumnField.setRightPosPx(300);
 		aggFuncField.setHeightPx(DEFAULT_ROWHEIGHT);
+		aggFuncField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 
 		aggExpressionField = this.addField(new FormPortletTextField("( &nbsp"));
 		aggExpressionField.setHasButton(true);
+		aggExpressionField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 		aggExpressionField.setCorrelationData(new Formula() {
 
 			@Override
@@ -113,6 +117,7 @@ public class AmiCenterManagerTriggerEditor_AggregateSelectEditor extends FormPor
 
 		this.outputField = this.addField(new FormPortletTextAreaField("Output"));
 		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
+		this.outputField.setName("output");
 
 		this.addFormPortletListener(this);
 		this.addMenuListener(this);

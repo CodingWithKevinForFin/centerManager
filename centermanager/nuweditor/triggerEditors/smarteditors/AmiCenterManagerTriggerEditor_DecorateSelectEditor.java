@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
+import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_DecorateTrigger;
 import com.f1.suite.web.menu.WebMenu;
 import com.f1.suite.web.menu.impl.BasicWebMenu;
@@ -66,12 +67,14 @@ public class AmiCenterManagerTriggerEditor_DecorateSelectEditor extends FormPort
 		targetColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
 		targetColumnField.setLeftPosPx(DEFAULT_LEFTPOS);
 		targetColumnField.setTopPosPx(DEFAULT_TOPPOS * 2);
+		targetColumnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 
 		sourceColumnField.setWidthPx(COLNAME_WIDTH);
 		sourceColumnField.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS);
 		sourceColumnField.setTopPosPx(DEFAULT_TOPPOS * 2);
 		//		sourceColumnField.setRightPosPx(300);
 		sourceColumnField.setHeightPx(DEFAULT_ROWHEIGHT);
+		sourceColumnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 
 		this.addButton = this.addField(new FormPortletButtonField("").setValue("Add"));
 		this.addButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 230).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
@@ -82,6 +85,7 @@ public class AmiCenterManagerTriggerEditor_DecorateSelectEditor extends FormPort
 
 		this.outputField = this.addField(new FormPortletTextAreaField("Output"));
 		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
+		this.outputField.setName("output");
 
 		this.addFormPortletListener(this);
 		this.addMenuListener(this);

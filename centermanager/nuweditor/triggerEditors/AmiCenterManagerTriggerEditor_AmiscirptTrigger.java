@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import com.f1.ami.amicommon.customobjects.AmiScriptClassPluginWrapper;
@@ -28,6 +29,7 @@ import com.f1.suite.web.portal.impl.form.FormPortletCheckboxField;
 import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.suite.web.portal.impl.form.FormPortletListener;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
+import com.f1.utils.CH;
 import com.f1.utils.LH;
 import com.f1.utils.SH;
 import com.f1.utils.string.JavaExpressionParser;
@@ -388,6 +390,13 @@ public class AmiCenterManagerTriggerEditor_AmiscirptTrigger extends AmiCenterMan
 		onUpdatingScriptField.setDisabled(!enable);
 		onStartupScriptField.setDisabled(!enable);
 		onDeletingScriptField.setDisabled(!enable);
+	}
+
+	@Override
+	public Set<? extends FormPortlet> getSmartEditors() {
+		return CH.s(this.onInsertedScriptForm, this.onInsertingScriptForm, this.onUpdatedScriptForm, this.onUpdatingScriptForm, this.onDeletingScriptForm,
+				this.onStartupScriptForm);
+
 	}
 
 }
