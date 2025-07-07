@@ -1,7 +1,9 @@
 package com.f1.ami.web.centermanager.nuweditor;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
 import com.f1.ami.web.AmiWebService;
@@ -21,6 +23,7 @@ import com.f1.suite.web.portal.impl.form.FormPortletContextMenuListener;
 import com.f1.suite.web.portal.impl.form.FormPortletField;
 import com.f1.suite.web.portal.impl.form.FormPortletListener;
 import com.f1.utils.CH;
+import com.f1.utils.LH;
 import com.f1.utils.OH;
 import com.f1.utils.SH;
 import com.f1.utils.concurrent.IdentityHashSet;
@@ -30,9 +33,11 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		implements FormPortletContextMenuFactory, FormPortletContextMenuListener, FormPortletListener {
 	public static final int DEFAULT_ROWHEIGHT = 25;
 	public static final int DEFAULT_LEFTPOS = 75; //164
-	public static final int DEFAULT_Y_SPACING = 10;
-	public static final int DEFAULT_X_SPACING = 45;
+	public static final int DEFAULT_Y_SPACING = 12;
+	public static final int DEFAULT_X_SPACING = 90;
 	public static final int DEFAULT_TOPPOS = DEFAULT_Y_SPACING;
+
+	public static final Logger log = LH.get();
 
 	//Width consts
 	public static final int NAME_WIDTH = 250;
@@ -84,6 +89,7 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		if (!isAdd) {
 			this.enableEditingCheckbox.setDefaultValue(false);
 			this.enableEditingCheckbox.setBgColor("#bab0b0");
+			this.enableEditingCheckbox.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 		}
 
 		this.service = AmiWebUtils.getService(config.getPortletManager());
@@ -96,13 +102,13 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 
 		this.submitButton = buttonsFp.addButton(new FormPortletButton("Submit"));
 		this.cancelButton = buttonsFp.addButton(new FormPortletButton("Cancel"));
-		//this.previewButton = buttonsFp.addButton(new FormPortletButton("Preview"));
 		this.diffButton = buttonsFp.addButton(new FormPortletButton("Diff"));
 		if (!isAdd)
 			this.resetButton = buttonsFp.addButton(new FormPortletButton("Reset"));
 		else
 			this.resetButton = null;
 		this.importExportButton = buttonsFp.addButton(new FormPortletButton("Import/Export"));
+
 	}
 
 	@Override
@@ -117,29 +123,21 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		} else if (button == this.resetButton) {
 			revertEdit();
 		}
-		//		else if (button == this.previewButton) {
-		//			PortletStyleManager_Dialog dp = service.getPortletManager().getStyleManager().getDialogStyle();
-		//			final PortletManager portletManager = service.getPortletManager();
-		//			ConfirmDialogPortlet cdp = new ConfirmDialogPortlet(portletManager.generateConfig(), AmiCenterManagerUtils.formatPreviewScript(previewScript()),
-		//					ConfirmDialogPortlet.TYPE_MESSAGE);
-		//			portletManager.showDialog("Script", cdp, dp.getDialogWidth(), dp.getDialogHeight());
-		//		} 
-
 	}
 
 	protected void revertEdit() {
 		for (FormPortletField i : CH.l(this.editedFields)) {
-			Object orig = i.getCorrelationData();
+			Object orig = i.getDefaultValue();
 			i.setValue(orig);
 			onFieldChanged(i);
 		}
 	}
-
+	//this checks for any field that has been edited
 	protected void onFieldChanged(FormPortletField<?> field) {
-		if (AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED.equals(field.getGroupName()))
+		if (AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED.equals(field.getGroupName()) || this.isAdd)
 			return;
 		boolean hadNoChanges = this.editedFields.isEmpty();
-		Object orig = field.getCorrelationData();
+		Object orig = field.getDefaultValue();
 		Object now = field.getValue();
 		if (OH.eq(orig, now) || (SH.isnt(now) && orig == null)) {
 			this.editedFields.remove(field);
@@ -159,6 +157,14 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		if (SH.is(prepareUseClause()))
 			return preparePreUseClause() + " USE " + prepareUseClause();
 		return preparePreUseClause();
+	}
+
+	@Override
+	public void onFieldValueChanged(FormPortlet portlet, FormPortletField<?> field, Map<String, String> attributes) {
+		if (field == this.enableEditingCheckbox) {
+			enableEdit(this.enableEditingCheckbox.getBooleanValue());
+		}
+
 	}
 
 	//The abilities to query the backend
@@ -218,4 +224,5 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 
 	abstract public void importFromText(String text, StringBuilder sink);
 
+	abstract public void enableEdit(boolean enable);
 }

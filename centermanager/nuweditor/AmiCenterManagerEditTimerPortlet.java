@@ -1,6 +1,5 @@
 package com.f1.ami.web.centermanager.nuweditor;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,10 +39,9 @@ import com.f1.utils.string.JavaExpressionParser;
 import com.f1.utils.string.Node;
 import com.f1.utils.string.node.DeclarationNode;
 import com.f1.utils.string.node.MethodNode;
-import com.f1.utils.structs.MapInMap;
+import com.f1.utils.string.sqlnode.AdminNode;
 import com.f1.utils.structs.table.derived.BasicDerivedCellParser;
 import com.f1.utils.structs.table.derived.DeclaredMethodFactory;
-import com.f1.utils.structs.table.derived.MethodFactory;
 
 public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEditCenterObjectPortlet implements TabManager {
 	private static final Logger log = LH.get();
@@ -66,7 +64,7 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 	final private GridPortlet onStartupScriptGrid;
 	final private FormPortlet onStartupScriptForm;
 	//final private AmiWebFormPortletAmiScriptField timerScriptField;
-	final private AmiCenterManagerFormPortletAmiScriptField timerScriptField;
+	final private AmiWebFormPortletAmiScriptField timerScriptField;
 	final private AmiWebFormPortletAmiScriptField timerOnStartupScriptField;
 	public static final HashMap<String, FormPortletField<?>> FIELDS_BY_NAME = new HashMap<String, FormPortletField<?>>();
 
@@ -92,7 +90,7 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		//only one type for timer, so disable
 		this.timerTypeField.setDisabled(true);
 		this.timerTypeField.addOption(AmiCenterEntityConsts.TIMER_TYPE_CODE_AMISCRIPT, AmiCenterEntityConsts.TIMER_TYPE_AMISCRIPT);
-		this.timerTypeField.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + DEFAULT_X_SPACING).setTopPosPx(DEFAULT_TOPPOS).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(100);
+		this.timerTypeField.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + (DEFAULT_X_SPACING - 20)).setTopPosPx(DEFAULT_TOPPOS).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(100);
 
 		this.timerOnField = this.form.addField(new FormPortletTextField(AmiCenterManagerUtils.formatRequiredField("ON")));
 		this.timerOnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
@@ -101,42 +99,44 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		this.timerOnField.setHelp("either:<br>" + "<ul><li>(1). A positive number defining the period in milliseconds between timer executions.</li>"
 				+ "  <li>(2). Empty string (\"\") to never run timer, useful for timers that should just run at startup, see <i style=\"color:blue\">onStartupScript</i></li>"
 				+ "  <li>(3). Crontab style entry declaring the schedule of when the timer should be execute:</li></ul>");
-		this.timerOnField.setWidthPx(120);
+		this.timerOnField.setWidthPx(100);
 		this.timerOnField.setHeightPx(DEFAULT_ROWHEIGHT);
-		this.timerOnField.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + 2 * DEFAULT_X_SPACING);
+		this.timerOnField.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + 2 * (DEFAULT_X_SPACING - 30));
 		this.timerOnField.setTopPosPx(DEFAULT_TOPPOS);
 
+		if (!isAdd) {
+			this.form.addField(enableEditingCheckbox);
+			enableEditingCheckbox.setWidth(20).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + (DEFAULT_X_SPACING - 10) * 3 + 85)
+					.setTopPosPx(DEFAULT_TOPPOS);
+		}
 		this.timerPriorityField = this.form.addField(new FormPortletTextField("PRIORITY"));
 		//this.timerPriorityField.setId("priority");
 		FIELDS_BY_NAME.put("priority", this.timerPriorityField);
 		this.timerPriorityField.setHelp("a number, timers with lowest value are executed first. Only considered when two or more timers have the same exact scheduled time");
 		this.timerPriorityField.setWidthPx(PRIORITY_WIDTH);
 		this.timerPriorityField.setHeightPx(DEFAULT_ROWHEIGHT);
-		this.timerPriorityField.setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + 2 * DEFAULT_X_SPACING + 200);
-		this.timerPriorityField.setTopPosPx(DEFAULT_TOPPOS);
-		this.timerPriorityField.setRightPosPx(80);
+		this.timerPriorityField.setLeftPosPx(DEFAULT_LEFTPOS);
+		this.timerPriorityField.setTopPosPx(DEFAULT_TOPPOS + (DEFAULT_ROWHEIGHT + DEFAULT_Y_SPACING) * 1);
 
 		//2nd row
 		this.timerTimeoutField = this.form.addField(new FormPortletTextField("timeout"));
-		//this.timerTimeoutField.setId("timeout");
+		//this.timerTimeoutField = new FormPortletTextField("timeout");
 		FIELDS_BY_NAME.put("timeout", this.timerTimeoutField);
 		this.timerTimeoutField.setHelp("Timeout in milliseconds, default is 100000 (100 seconds)");
 		this.timerTimeoutField.setWidthPx(TIMEOUT_WIDTH);
 		this.timerTimeoutField.setHeightPx(DEFAULT_ROWHEIGHT);
-		this.timerTimeoutField.setLeftPosPx(DEFAULT_LEFTPOS);
+		this.timerTimeoutField.setLeftPosPx(DEFAULT_LEFTPOS + PRIORITY_WIDTH + (DEFAULT_X_SPACING - 10));
 		this.timerTimeoutField.setTopPosPx(DEFAULT_TOPPOS + (DEFAULT_ROWHEIGHT + DEFAULT_Y_SPACING) * 1);
 
 		this.timerLimitField = this.form.addField(new FormPortletTextField("limit"));
-		//this.timerLimitField.setId("limit");
 		FIELDS_BY_NAME.put("limit", this.timerLimitField);
 		timerLimitField.setHelp("Row limit for queries, default is 10000");
 		this.timerLimitField.setWidthPx(LIMIT_WIDTH);
 		this.timerLimitField.setHeightPx(DEFAULT_ROWHEIGHT);
-		this.timerLimitField.setLeftPosPx(DEFAULT_LEFTPOS + TIMEOUT_WIDTH + DEFAULT_X_SPACING);
+		this.timerLimitField.setLeftPosPx(DEFAULT_LEFTPOS + PRIORITY_WIDTH + TIMEOUT_WIDTH + (DEFAULT_X_SPACING - 10) * 2);
 		this.timerLimitField.setTopPosPx(DEFAULT_TOPPOS + (DEFAULT_ROWHEIGHT + DEFAULT_Y_SPACING) * 1);
 
 		timerLoggingField = this.form.addField(new FormPortletSelectField(short.class, "logging"));
-		//timerLoggingField.setId("logging");
 		FIELDS_BY_NAME.put("logging", this.timerLoggingField);
 		timerLoggingField.addOption(AmiCenterEntityConsts.LOGGING_LEVEL_CODE_OFF, AmiCenterEntityConsts.LOGGING_LEVEL_OFF);
 		timerLoggingField.addOption(AmiCenterEntityConsts.LOGGING_LEVEL_CODE_ON, AmiCenterEntityConsts.LOGGING_LEVEL_ON);
@@ -147,7 +147,7 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 				+ "<li>(3). <b style=\"color:blue\"><i>verbose</i></b>: equivalent of using <b><i>show_plan=ON</i></b> in AMIDB. Logs the time that a timer starts and finishes and also each query step.</li></ul>");
 		timerLoggingField.setWidthPx(LOGGING_WIDTH);
 		timerLoggingField.setHeightPx(DEFAULT_ROWHEIGHT);
-		timerLoggingField.setLeftPosPx(DEFAULT_LEFTPOS + TIMEOUT_WIDTH + LIMIT_WIDTH + DEFAULT_X_SPACING * 2);
+		timerLoggingField.setLeftPosPx(DEFAULT_LEFTPOS + PRIORITY_WIDTH + TIMEOUT_WIDTH + LIMIT_WIDTH + (DEFAULT_X_SPACING - 10) * 3);
 		timerLoggingField.setTopPosPx(DEFAULT_TOPPOS + (DEFAULT_ROWHEIGHT + DEFAULT_Y_SPACING) * 1);
 
 		//last row(3rd row)
@@ -165,7 +165,8 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		onStartupScriptForm = new FormPortlet(generateConfig());
 		onStartupScriptGrid.addChild(onStartupScriptForm);
 
-		timerOnStartupScriptField = onStartupScriptForm.addField(new AmiWebFormPortletAmiScriptField("", getManager(), ""));
+		timerOnStartupScriptField = onStartupScriptForm
+				.addField(new AmiWebFormPortletAmiScriptField("", getManager(), AmiWebFormPortletAmiScriptField.LANGUAGE_SCOPE_CENTER_SCRIPT));
 		//timerOnStartupScriptField.setId("onStartupScript");
 		FIELDS_BY_NAME.put("onStartupScript", timerOnStartupScriptField);
 		timerOnStartupScriptField.setHelp("AmiScript to run when the timer is created");
@@ -178,7 +179,7 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		scriptForm = new FormPortlet(generateConfig());
 		scriptGrid.addChild(scriptForm);
 
-		timerScriptField = scriptForm.addField(new AmiCenterManagerFormPortletAmiScriptField("", getManager()));
+		timerScriptField = scriptForm.addField(new AmiWebFormPortletAmiScriptField("", getManager(), AmiWebFormPortletAmiScriptField.LANGUAGE_SCOPE_CENTER_SCRIPT));
 		//timerScriptField.setId("script");
 		FIELDS_BY_NAME.put("script", timerScriptField);
 		timerScriptField.setHelp("AmiScript to run when timer is executed");
@@ -193,7 +194,6 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		this.scriptTabs.getTabPortletStyle().setHasMenuAlways(true);
 		this.scriptTabs.addChild("Script", scriptGrid);
 		this.scriptTabs.addChild("onStartupScript", onStartupScriptGrid);
-
 		GridPortlet grid = new GridPortlet(generateConfig());
 		grid.addChild(form, 0, 0);
 		grid.addChild(scriptTabs, 0, 1);
@@ -203,10 +203,42 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		this.addChild(buttonsFp, 0, 1);
 
 		setRowSize(1, buttonsFp.getButtonPanelHeight());
+		if (!isAdd)
+			enableEdit(false);
+
 		this.form.addFormPortletListener(this);
 		this.scriptForm.addFormPortletListener(this);
 		this.onStartupScriptForm.addFormPortletListener(this);
-		this.registerMethods();
+		registerMethods();
+	}
+
+	private void registerMethods() {
+		sendQueryToBackend("SHOW METHODS WHERE DefinedBy==\"USER\"");
+	}
+
+	public AmiCenterManagerEditTimerPortlet(PortletConfig config, String sql) {
+		this(config, false);
+		//never allow editing trigger type
+		this.timerTypeField.setDisabled(true);
+		this.importFromText(sql, new StringBuilder());
+		//add form portlet listener
+		this.form.addFormPortletListener(this);
+		//by default editing is disabled
+		enableEdit(false);
+	}
+
+	@Override
+	public void enableEdit(boolean enable) {
+		for (FormPortletField<?> fpf : this.form.getFormFields()) {
+			if (fpf != this.enableEditingCheckbox)
+				fpf.setDisabled(!enable);
+			if (fpf == this.timerVarsField)
+				AmiCenterManagerUtils.onFieldDisabled(fpf, !enable);
+		}
+		this.timerOnStartupScriptField.setDisabled(!enable);
+		AmiCenterManagerUtils.onFieldDisabled(this.timerOnStartupScriptField, !enable);
+		this.timerScriptField.setDisabled(!enable);
+		AmiCenterManagerUtils.onFieldDisabled(this.timerScriptField, !enable);
 
 	}
 
@@ -224,23 +256,11 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 
 	@Override
 	public void onFieldValueChanged(FormPortlet portlet, FormPortletField<?> field, Map<String, String> attributes) {
+		super.onFieldValueChanged(portlet, field, attributes);
 		if (field == this.timerVarsField) {
 			parseVars();
 		}
-
-	}
-
-	private void registerMethods() {
-		//TEST
-		//		DeclaredMethodFactory dmf = new DeclaredMethodFactory(Integer.class, "foo", new String[] { "a", "b" }, new Class[] { Integer.class, Integer.class }, (byte) 0);
-		//		this.timerScriptField.addMethodFactory(dmf);
-		sendQueryToBackend("SHOW METHODS WHERE DefinedBy==\"USER\"");
-		List<MethodFactory> sink = new ArrayList<MethodFactory>();
-		this.timerScriptField.getMethodFactory().getAllMethodFactories(sink);
-		for (MethodFactory i : sink) {
-			String type = i.getDefinition().getMethodName();
-
-		}
+		onFieldChanged(field);
 	}
 
 	private void parseVars() {
@@ -342,62 +362,48 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 
 	@Override
 	public String exportToText() {
-		//Map<String, Object> config = CH.m("schema", null, "config", null);
-		MapInMap<String, String, Object> config = new MapInMap<String, String, Object>();
-		//schema (anything before the use clause)
-		config.putMulti("schema", "group", AmiCenterGraphNode.TYPE_TIMER);
-		config.putMulti("schema", "name", this.nameField.getValue());
-		config.putMulti("schema", "type", AmiCenterEntityConsts.TIMER_TYPE_AMISCRIPT);
-		config.putMulti("schema", "on", this.timerOnField.getValue());
-		if (SH.is(this.timerPriorityField.getValue()))
-			config.putMulti("schema", "priority", this.timerPriorityField.getValue());
-
-		//config (anything after the use clause)
-		config.putMulti("config", "script", this.timerScriptField.getValue());
-		config.putMulti("config", "logging", AmiCenterManagerUtils.toLoggingType(this.timerLoggingField.getValue()));
-		if (SH.is(this.timerVarsField.getValue()))
-			config.putMulti("config", "vars", this.timerVarsField.getValue());
-		if (SH.is(this.timerTimeoutField.getValue()))
-			config.putMulti("config", "timeout", this.timerTimeoutField.getValue());
-		if (SH.is(this.timerLimitField.getValue()))
-			config.putMulti("config", "limit", this.timerLimitField.getValue());
-		if (SH.is(this.timerOnStartupScriptField.getValue()))
-			config.putMulti("config", "onStartupScript", this.timerOnStartupScriptField.getValue());
-		return JSON_CONVERTER.objectToString(config);
+		return previewScript();
 	}
 
 	@Override
 	public void importFromText(String text, StringBuilder sink) {
-		Map<String, Object> all = (Map<String, Object>) JSON_CONVERTER.stringToObject(text);
+		AdminNode an = AmiCenterManagerUtils.scriptToAdminNode(text);
+		Map<String, String> timerConfig = AmiCenterManagerUtils.parseAdminNode_Timer(an);
+		String triggerType = timerConfig.get("timerType");
+		this.timerTypeField.setDefaultValue(AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TIMER, SH.toUpperCase(triggerType)));
+		//only type is "AmiScript" for timers, no need to update the template
 
-		Map<String, Object> schema = (Map<String, Object>) all.get("schema");
-		Map<String, Object> config = (Map<String, Object>) all.get("config");
-
-		for (Entry<String, Object> e : schema.entrySet()) {
+		for (Entry<String, String> e : timerConfig.entrySet()) {
 			String key = e.getKey();
-			Object value = e.getValue();
-			FormPortletField<?> f = FIELDS_BY_NAME.get(key);
-			if (f instanceof AmiWebFormPortletAmiScriptField)
-				((AmiWebFormPortletAmiScriptField) f).setValue((String) value);
-			else if (f instanceof FormPortletTextField)
-				((FormPortletTextField) f).setValue((String) value);
-			else if (f instanceof FormPortletSelectField) {
-				if ("logging".equals(key))
-					((FormPortletSelectField<Short>) f).setValue(AmiCenterManagerUtils.toLoggingTypeCode((String) value));
-			}
-		}
-
-		for (Entry<String, Object> e : config.entrySet()) {
-			String key = e.getKey();
-			Object value = e.getValue();
-			FormPortletField<?> f = FIELDS_BY_NAME.get(key);
-			if (f instanceof AmiWebFormPortletAmiScriptField)
-				((AmiWebFormPortletAmiScriptField) f).setValue((String) value);
-			else if (f instanceof FormPortletTextField)
-				((FormPortletTextField) f).setValue((String) value);
-			else if (f instanceof FormPortletSelectField) {
-				if ("logging".equals(key))
-					((FormPortletSelectField<Short>) f).setValue(AmiCenterManagerUtils.toLoggingTypeCode((String) value));
+			String value = e.getValue();
+			if ("timerName".equals(key)) {
+				this.nameField.setValue(value);
+				this.nameField.setDefaultValue(value);
+			} else if ("timerType".equals(key)) {
+				continue;
+			} else if ("timerOn".equals(key)) {
+				this.timerOnField.setValue(value);
+				this.timerOnField.setDefaultValue(value);
+			} else if ("timerPriority".equals(key)) {
+				this.timerPriorityField.setValue(value);
+				this.timerPriorityField.setDefaultValue(value);
+			} else if ("timeout".equals(key)) {
+				this.timerTimeoutField.setValue(value);
+				this.timerTimeoutField.setDefaultValue(value);
+			} else if ("limit".equals(key)) {
+				this.timerLimitField.setValue(value);
+				this.timerLimitField.setDefaultValue(value);
+			} else if ("logging".equals(key)) {
+				if (SH.is(value)) {
+					this.timerLoggingField.setValue(AmiCenterManagerUtils.toLoggingTypeCode(value));
+					this.timerLoggingField.setDefaultValue(AmiCenterManagerUtils.toLoggingTypeCode(value));
+				}
+			} else if ("script".equals(key)) {
+				this.timerScriptField.setValue(value);
+				this.timerScriptField.setDefaultValue(value);
+			} else if ("onStartupScript".equals(key)) {
+				this.timerOnStartupScriptField.setValue(value);
+				this.timerOnStartupScriptField.setDefaultValue(value);
 			}
 		}
 	}
@@ -430,13 +436,13 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 						String type = n.getVartype();
 						paramNames[i] = name;
 						try {
-							paramClzzs[i] = this.timerScriptField.getMethodFactory().forName(type);
+							paramClzzs[i] = this.timerScriptField.getCenterMethodFactory().forName(type);
 						} catch (ClassNotFoundException e1) {
 							LH.warning(log, "Class Not found" + name);
 						}
 					}
 					try {
-						Class<?> returnTypeClzz = this.timerScriptField.getMethodFactory().forName(returnType);
+						Class<?> returnTypeClzz = this.timerScriptField.getCenterMethodFactory().forName(returnType);
 						DeclaredMethodFactory dmf = new DeclaredMethodFactory(returnTypeClzz, methodName, paramNames, paramClzzs, (byte) 0);
 						this.timerScriptField.addMethodFactory(dmf);
 					} catch (ClassNotFoundException e) {

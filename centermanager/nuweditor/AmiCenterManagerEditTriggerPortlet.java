@@ -113,6 +113,12 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		initTriggerTypes();
 		triggerTypeField.setWidth(TYPE_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + DEFAULT_X_SPACING).setTopPosPx(DEFAULT_TOPPOS);
 
+		triggerPriorityField = this.form.addField(new FormPortletTextField("PRIORITY"));
+		triggerPriorityField.setName("triggerPriority");
+		triggerPriorityField.setHelp("a number, timers with lowest value are executed first. Only considered when two or more timers have the same exact scheduled time");
+		triggerPriorityField.setWidth(PRIORITY_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + DEFAULT_X_SPACING * 2)
+				.setTopPosPx(DEFAULT_TOPPOS);
+
 		triggerOnField = this.form.addField(new FormPortletMultiCheckboxField(String.class, AmiCenterManagerUtils.formatRequiredField("ON")));
 		triggerOnField.setName("triggerOn");
 		triggerOnField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
@@ -123,15 +129,9 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		triggerOnField.setBgColor("#ffffff");
 		triggerOnField.setBorderColor("00FFFFFF");
 
-		triggerPriorityField = this.form.addField(new FormPortletTextField("PRIORITY"));
-		triggerPriorityField.setName("triggerPriority");
-		triggerPriorityField.setHelp("a number, timers with lowest value are executed first. Only considered when two or more timers have the same exact scheduled time");
-		triggerPriorityField.setWidth(PRIORITY_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + (int) (DEFAULT_X_SPACING * 3))
-				.setTopPosPx(DEFAULT_TOPPOS);
-
 		if (!isAdd) {
 			this.form.addField(enableEditingCheckbox);
-			enableEditingCheckbox.setWidth(20).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + (int) (DEFAULT_X_SPACING * 3) + 180)
+			enableEditingCheckbox.setWidth(20).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS + NAME_WIDTH + TYPE_WIDTH + DEFAULT_X_SPACING * 3 + 60)
 					.setTopPosPx(DEFAULT_TOPPOS);
 		} else {
 			editorPanel.setPortlet(amiscriptEditor);
@@ -211,6 +211,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 	@Override
 	public void onFieldValueChanged(FormPortlet portlet, FormPortletField<?> field, Map<String, String> attributes) {
+		super.onFieldValueChanged(portlet, field, attributes);
 		if (field == this.triggerTypeField) {
 			short type = this.triggerTypeField.getValue();
 			updateTriggerTemplate(type);
@@ -261,8 +262,6 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 					} else
 						relayEditor.resetDependency();
 			}
-		} else if (field == this.enableEditingCheckbox) {
-			enableEdit(this.enableEditingCheckbox.getBooleanValue());
 		} else {
 			//other field changes go here
 			OH.assertTrue(!this.isAdd);
@@ -270,6 +269,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		}
 	}
 
+	@Override
 	public void enableEdit(boolean enable) {
 		for (FormPortletField<?> fpf : this.form.getFormFields()) {
 			if (fpf == this.triggerTypeField)
@@ -335,7 +335,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		Map<String, String> triggerConfig = AmiCenterManagerUtils.parseAdminNode_Trigger(an);
 		String triggerType = triggerConfig.get("triggerType");
 		this.triggerTypeField.setValue(AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TRIGGER, SH.toUpperCase(triggerType)));
-		this.triggerTypeField.setCorrelationData(AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TRIGGER, SH.toUpperCase(triggerType)));
+		this.triggerTypeField.setDefaultValue(AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TRIGGER, SH.toUpperCase(triggerType)));
 		this.onFieldValueChanged(this.form, this.triggerTypeField, null);
 
 		for (Entry<String, String> e : triggerConfig.entrySet()) {
@@ -343,7 +343,8 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 			String value = e.getValue();
 			if ("triggerName".equals(key)) {
 				this.triggerNameField.setValue(value);
-				this.triggerNameField.setCorrelationData(value);
+				this.triggerNameField.setDefaultValue(value);
+				//this.triggerNameField.setCorrelationData(value);
 			} else if ("triggerType".equals(key)) {
 				continue;
 			} else if ("triggerOn".equals(key)) {
@@ -355,14 +356,14 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 					l = new String[] { value };
 				try {
 					this.triggerOnField.setValue(CH.ls(l));
-					this.triggerOnField.setCorrelationData(CH.ls(l));
+					this.triggerOnField.setDefaultValue(CH.ls(l));
 				} catch (Exception ex) {
 					AmiCenterManagerUtils.popDialog(service, ex.getMessage(), "Import Error");
 				}
 
 			} else if ("triggerPriority".equals(key)) {
 				this.triggerPriorityField.setValue(value);
-				this.triggerPriorityField.setCorrelationData(value);
+				this.triggerPriorityField.setDefaultValue(value);
 			} else {//all the use options go here
 					//1. locate the field
 				FormPortletField<?> fpf = null;
@@ -380,27 +381,27 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 				//2. set the value for the field depending on the field type
 				if (fpf instanceof FormPortletTextField) {
 					((FormPortletTextField) fpf).setValue(value);
-					((FormPortletTextField) fpf).setCorrelationData(value);
+					((FormPortletTextField) fpf).setDefaultValue(value);
 				} else if (fpf instanceof FormPortletTextAreaField) {
 					((FormPortletTextAreaField) fpf).setValue(value);
-					((FormPortletTextAreaField) fpf).setCorrelationData(value);
+					((FormPortletTextAreaField) fpf).setDefaultValue(value);
 				} else if (fpf instanceof AmiWebFormPortletAmiScriptField) {
 					((AmiWebFormPortletAmiScriptField) fpf).setValue(value);
-					((AmiWebFormPortletAmiScriptField) fpf).setCorrelationData(value);
+					((AmiWebFormPortletAmiScriptField) fpf).setDefaultValue(value);
 				} else if (fpf instanceof FormPortletCheckboxField) {
 					if ("true".equals(value)) {
 						((FormPortletCheckboxField) fpf).setValue(true);
-						((FormPortletCheckboxField) fpf).setCorrelationData(true);
+						((FormPortletCheckboxField) fpf).setDefaultValue(true);
 					} else {
 						((FormPortletCheckboxField) fpf).setValue(false);
-						((FormPortletCheckboxField) fpf).setCorrelationData(false);
+						((FormPortletCheckboxField) fpf).setDefaultValue(false);
 					}
 
 				} else if (fpf instanceof FormPortletSelectField) {
 					String fieldName = fpf.getName();
 					if (AmiCenterManagerTriggerEditor_JoinTrigger.TYPE_FIELD_VARNAME.equals(fieldName)) {
 						((FormPortletSelectField) fpf).setValue(AmiCenterManagerUtils.toJoinTriggerTypeCode(value));
-						((FormPortletSelectField) fpf).setCorrelationData(AmiCenterManagerUtils.toJoinTriggerTypeCode(value));
+						((FormPortletSelectField) fpf).setDefaultValue(AmiCenterManagerUtils.toJoinTriggerTypeCode(value));
 					}
 
 				} else if (fpf instanceof FormPortletMultiCheckboxField) {
@@ -414,11 +415,11 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 					//						continue;
 					if ("target".equals(key)) {
 						((FormPortletMultiCheckboxField) fpf).setValueNoThrow(CH.ls(l));
-						((FormPortletMultiCheckboxField) fpf).setCorrelationData(CH.ls(l));
+						((FormPortletMultiCheckboxField) fpf).setDefaultValue(CH.ls(l));
 						this.relayEditor.onFieldValueChanged(null, fpf, null);
 					} else {
 						((FormPortletMultiCheckboxField) fpf).setValueNoThrow(CH.ls(l));
-						((FormPortletMultiCheckboxField) fpf).setCorrelationData(CH.ls(l));
+						((FormPortletMultiCheckboxField) fpf).setDefaultValue(CH.ls(l));
 					}
 
 				}

@@ -1,6 +1,5 @@
 package com.f1.ami.web.centermanager.nuweditor.triggerEditors;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,6 @@ import com.f1.utils.string.node.DeclarationNode;
 import com.f1.utils.string.node.MethodNode;
 import com.f1.utils.structs.table.derived.BasicDerivedCellParser;
 import com.f1.utils.structs.table.derived.DeclaredMethodFactory;
-import com.f1.utils.structs.table.derived.MethodFactory;
 
 public class AmiCenterManagerTriggerEditor_AmiscirptTrigger extends AmiCenterManagerAbstractTriggerEditor implements FormPortletListener {
 	public static final int DEFAULT_ROWHEIGHT = AmiCenterManagerAbstractEditCenterObjectPortlet.DEFAULT_ROWHEIGHT;
@@ -365,18 +363,6 @@ public class AmiCenterManagerTriggerEditor_AmiscirptTrigger extends AmiCenterMan
 
 	private void registerMethods() {
 		sendQueryToBackend("SHOW METHODS WHERE DefinedBy==\"USER\"");
-		List<MethodFactory> sink = new ArrayList<MethodFactory>();
-		onInsertedScriptField.getCenterMethodFactory().getAllMethodFactories(sink);
-		onInsertingScriptField.getCenterMethodFactory().getAllMethodFactories(sink);
-		onDeletingScriptField.getCenterMethodFactory().getAllMethodFactories(sink);
-		onUpdatingScriptField.getCenterMethodFactory().getAllMethodFactories(sink);
-		onUpdatedScriptField.getCenterMethodFactory().getAllMethodFactories(sink);
-		onStartupScriptField.getCenterMethodFactory().getAllMethodFactories(sink);
-		for (MethodFactory i : sink) {
-			String type = i.getDefinition().getMethodName();
-			//System.out.println(type);
-
-		}
 	}
 
 	@Override

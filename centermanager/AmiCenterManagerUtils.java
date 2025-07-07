@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import com.f1.ami.amicommon.AmiConsts;
 import com.f1.ami.amicommon.msg.AmiDatasourceColumn;
+import com.f1.ami.web.AmiWebFormPortletAmiScriptField;
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.graph.AmiCenterGraphNode;
 import com.f1.base.Row;
@@ -850,6 +851,18 @@ public class AmiCenterManagerUtils {
 		} else {
 			field.setCssStyle("_bg=#FFFFFF");
 			field.setTitle(field.getTitle().replace(AmiCenterEntityConsts.CHANGED_FIELD_ANNOTATION_HTML, ""));
+		}
+
+	}
+
+	//if a field is edited
+	public static void onFieldDisabled(FormPortletField<?> field, boolean disabled) {
+		if (!(field instanceof AmiWebFormPortletAmiScriptField))
+			return;
+		if (disabled) {
+			field.setCssStyle("_bg=#D3D3D3");
+		} else {
+			field.setCssStyle("_bg=#FFFFFF");
 		}
 
 	}
