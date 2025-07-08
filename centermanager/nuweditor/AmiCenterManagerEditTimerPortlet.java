@@ -157,7 +157,7 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		FIELDS_BY_NAME.put("vars", this.timerVarsField);
 		timerVarsField.setHelp("Variables shared by the timer, a comma delimited list of type varname");
 		timerVarsField.setWidthPx(VARS_WIDTH);
-		timerVarsField.setHeightPx(DEFAULT_ROWHEIGHT - 5);
+		timerVarsField.setHeightPx((DEFAULT_ROWHEIGHT - 10) * 2);
 		timerVarsField.setLeftPosPx(DEFAULT_LEFTPOS);
 		timerVarsField.setTopPosPx(DEFAULT_TOPPOS + (DEFAULT_ROWHEIGHT + DEFAULT_Y_SPACING) * 2);
 
@@ -404,6 +404,9 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 					this.timerLoggingField.setValue(AmiCenterManagerUtils.toLoggingTypeCode(value));
 					this.timerLoggingField.setDefaultValue(AmiCenterManagerUtils.toLoggingTypeCode(value));
 				}
+			} else if ("vars".equals(key)) {
+				this.timerVarsField.setValue(value);
+				this.timerVarsField.setDefaultValue(value);
 			} else if ("script".equals(key)) {
 				this.timerScriptField.setValue(value);
 				this.timerScriptField.setDefaultValue(value);

@@ -48,7 +48,7 @@ public class AmiCenterManagerEditProcedurePortlet extends AmiCenterManagerAbstra
 	private static final int NAME_WIDTH = 110;
 	private static final int TYPE_WIDTH = 80;
 	private static final int LOGGING_WIDTH = 80;
-	private static final int ARGS_WIDTH = 700;
+	private static final int ARGS_WIDTH = 680;
 	//height const
 	private static final int OPTION_FORM_HEIGHT = 120;
 	private static final int AMISCRIPT_FORM_HEIGHT = 600;
@@ -110,13 +110,13 @@ public class AmiCenterManagerEditProcedurePortlet extends AmiCenterManagerAbstra
 					.setTopPosPx(DEFAULT_TOPPOS);
 		}
 
-		argsField = this.form.addField(
-				new AmiWebFormPortletAmiScriptField(AmiCenterManagerUtils.formatRequiredField("args"), getManager(), AmiWebFormPortletAmiScriptField.LANGUAGE_SCOPE_CENTER_SCRIPT));
+		argsField = this.form.addField(new AmiWebFormPortletAmiScriptField(AmiCenterManagerUtils.formatRequiredField("arguments"), getManager(),
+				AmiWebFormPortletAmiScriptField.LANGUAGE_SCOPE_CENTER_SCRIPT));
 		argsField.setHelp("Variables shared by the timer, a comma delimited list of type varname");
 		argsField.setWidthPx(ARGS_WIDTH);
-		argsField.setHeightPx(DEFAULT_ROWHEIGHT - 5);
-		argsField.setLeftPosPx(DEFAULT_LEFTPOS);
-		argsField.setTopPosPx(DEFAULT_TOPPOS + (DEFAULT_ROWHEIGHT + DEFAULT_Y_SPACING) * 2);
+		argsField.setHeightPx(DEFAULT_ROWHEIGHT * 2);
+		argsField.setLeftPosPx(DEFAULT_LEFTPOS + 10);
+		argsField.setTopPosPx(DEFAULT_TOPPOS + (int) ((DEFAULT_ROWHEIGHT + DEFAULT_Y_SPACING) * 1.5));
 
 		onStartupScriptGrid = new GridPortlet(generateConfig());
 		onStartupScriptForm = new FormPortlet(generateConfig());
@@ -279,7 +279,7 @@ public class AmiCenterManagerEditProcedurePortlet extends AmiCenterManagerAbstra
 					this.loggingField.setValue(AmiCenterManagerUtils.toLoggingTypeCode(value));
 					this.loggingField.setDefaultValue(AmiCenterManagerUtils.toLoggingTypeCode(value));
 				}
-			} else if ("args".equals(key)) {
+			} else if ("arguments".equals(key)) {
 				this.argsField.setValue(value);
 				this.argsField.setDefaultValue(value);
 			} else if ("script".equals(key)) {
