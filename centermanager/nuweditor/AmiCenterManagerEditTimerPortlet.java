@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import com.f1.ami.amicommon.customobjects.AmiScriptClassPluginWrapper;
+import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsResponse;
 import com.f1.ami.web.AmiWebFormPortletAmiScriptField;
 import com.f1.ami.web.AmiWebScriptManager;
@@ -210,6 +211,11 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		this.scriptForm.addFormPortletListener(this);
 		this.onStartupScriptForm.addFormPortletListener(this);
 		registerMethods();
+		registerProcedures();
+	}
+
+	private void registerProcedures() {
+		sendQueryToBackend("SHOW FULL PROCEDURES");
 	}
 
 	private void registerMethods() {
@@ -415,41 +421,81 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		if (sessionId == -1) {
 			this.sessionId = response.getQuerySessionId();
 		}
+		Action a = result.getRequestMessage().getAction();
+		String query = null;
+		if (a instanceof AmiCenterQueryDsRequest) {
+			AmiCenterQueryDsRequest request = (AmiCenterQueryDsRequest) a;
+			query = request.getQuery();
+		}
 		if (response.getOk()) {
 			List<Table> tables = response.getTables();
 			if (tables.size() == 1) {
 				Table t = tables.get(0);
 				JavaExpressionParser jep = new JavaExpressionParser();
 				BasicDerivedCellParser cp = new BasicDerivedCellParser(jep);
-				for (Row r : t.getRows()) {
-					String methodName = (String) r.get("MethodName");
-					String definition = (String) r.get("Definition");
-					String returnType = (String) r.get("ReturnType");
-					MethodNode mn = (MethodNode) cp.getExpressionParser().parse(definition);
-					int paramsCnt = mn.getParamsCount();
-					Node[] ns = mn.getParamsToArray();
-					String[] paramNames = new String[paramsCnt];
-					Class[] paramClzzs = new Class[paramsCnt];
-					for (int i = 0; i < paramsCnt; i++) {
-						DeclarationNode n = (DeclarationNode) ns[i];
-						String name = n.getVarname();
-						String type = n.getVartype();
-						paramNames[i] = name;
-						try {
-							paramClzzs[i] = this.timerScriptField.getCenterMethodFactory().forName(type);
-						} catch (ClassNotFoundException e1) {
-							LH.warning(log, "Class Not found" + name);
+				if (query.startsWith("SHOW METHODS")) {
+					for (Row r : t.getRows()) {
+						String methodName = (String) r.get("MethodName");
+						String definition = (String) r.get("Definition");
+						String returnType = (String) r.get("ReturnType");
+						MethodNode mn = (MethodNode) cp.getExpressionParser().parse(definition);
+						int paramsCnt = mn.getParamsCount();
+						Node[] ns = mn.getParamsToArray();
+						String[] paramNames = new String[paramsCnt];
+						Class[] paramClzzs = new Class[paramsCnt];
+						for (int i = 0; i < paramsCnt; i++) {
+							DeclarationNode n = (DeclarationNode) ns[i];
+							String name = n.getVarname();
+							String type = n.getVartype();
+							paramNames[i] = name;
+							try {
+								paramClzzs[i] = this.timerScriptField.getCenterMethodFactory().forName(type);
+							} catch (ClassNotFoundException e1) {
+								LH.warning(log, "Class Not found" + name);
+							}
 						}
-					}
-					try {
-						Class<?> returnTypeClzz = this.timerScriptField.getCenterMethodFactory().forName(returnType);
-						DeclaredMethodFactory dmf = new DeclaredMethodFactory(returnTypeClzz, methodName, paramNames, paramClzzs, (byte) 0);
-						this.timerScriptField.addMethodFactory(dmf);
-					} catch (ClassNotFoundException e) {
-						e.printStackTrace();
-					}
+						try {
+							Class<?> returnTypeClzz = this.timerScriptField.getCenterMethodFactory().forName(returnType);
+							DeclaredMethodFactory dmf = new DeclaredMethodFactory(returnTypeClzz, methodName, paramNames, paramClzzs, (byte) 0);
+							this.timerScriptField.addMethodFactory(dmf);
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
+						}
 
+					}
+				} else {
+					for (Row r : t.getRows()) {
+						String methodName = (String) r.get("ProcedureName");
+						String args = (String) r.get("Arguments");
+						String returnType = (String) r.get("ReturnType");
+						String[] params = SH.split(",", args);
+						//						String[] params = SH.isnt(args) ? new String[0] : SH.split(",",args);
+						int paramsCnt = params.length;
+						String[] paramNames = new String[paramsCnt];
+						Class[] paramClzzs = new Class[paramsCnt];
+						for (int i = 0; i < paramsCnt; i++) {
+							String param = params[i];
+							String name = SH.beforeFirst(param, " ");
+							String type = SH.afterFirst(param, " ").contains(" ") ? SH.beforeFirst(SH.afterFirst(param, " "), " ") : SH.afterFirst(param, " ");
+							paramNames[i] = name;
+							try {
+								paramClzzs[i] = this.timerScriptField.getCenterMethodFactory().forName(type);
+							} catch (ClassNotFoundException e1) {
+								LH.warning(log, "Class Not found" + name);
+							}
+						}
+						try {
+							Class<?> returnTypeClzz = this.timerScriptField.getCenterMethodFactory().forName(returnType);
+							DeclaredMethodFactory dmf = new DeclaredMethodFactory(returnTypeClzz, methodName, paramNames, paramClzzs, (byte) 0);
+							timerScriptField.registerProcedure(dmf);
+							timerOnStartupScriptField.registerProcedure(dmf);
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
+						}
+
+					}
 				}
+
 			}
 		}
 	}
