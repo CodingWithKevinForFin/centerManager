@@ -157,6 +157,7 @@ public class AmiCenterManagerEditProcedurePortlet extends AmiCenterManagerAbstra
 		this.scriptForm.addFormPortletListener(this);
 		this.onStartupScriptForm.addFormPortletListener(this);
 		registerMethods();
+		registerProcedures();
 	}
 
 	public AmiCenterManagerEditProcedurePortlet(PortletConfig config, String sql) {
@@ -296,6 +297,8 @@ public class AmiCenterManagerEditProcedurePortlet extends AmiCenterManagerAbstra
 		for (FormPortletField<?> fpf : this.form.getFormFields()) {
 			if (fpf != this.enableEditingCheckbox)
 				fpf.setDisabled(!enable);
+			if (fpf == this.argsField)
+				AmiCenterManagerUtils.onFieldDisabled(argsField, !enable);
 		}
 		this.onStartupScriptField.setDisabled(!enable);
 		AmiCenterManagerUtils.onFieldDisabled(onStartupScriptField, !enable);
@@ -308,11 +311,21 @@ public class AmiCenterManagerEditProcedurePortlet extends AmiCenterManagerAbstra
 		sendQueryToBackend("SHOW METHODS WHERE DefinedBy==\"USER\"");
 	}
 
+	private void registerProcedures() {
+		sendQueryToBackend("SHOW FULL PROCEDURES");
+	}
+
 	@Override
 	public void onBackendResponse(ResultMessage<Action> result) {
 		if (result.getError() != null) {
 			getManager().showAlert("Internal Error:" + result.getError().getMessage(), result.getError());
 			return;
+		}
+		Action a = result.getRequestMessage().getAction();
+		String query = null;
+		if (a instanceof AmiCenterQueryDsRequest) {
+			AmiCenterQueryDsRequest request = (AmiCenterQueryDsRequest) a;
+			query = request.getQuery();
 		}
 		AmiCenterQueryDsResponse response = (AmiCenterQueryDsResponse) result.getAction();
 		if (response.getOk()) {
@@ -321,36 +334,70 @@ public class AmiCenterManagerEditProcedurePortlet extends AmiCenterManagerAbstra
 				Table t = tables.get(0);
 				JavaExpressionParser jep = new JavaExpressionParser();
 				BasicDerivedCellParser cp = new BasicDerivedCellParser(jep);
-				for (Row r : t.getRows()) {
-					String methodName = (String) r.get("MethodName");
-					String definition = (String) r.get("Definition");
-					String returnType = (String) r.get("ReturnType");
-					MethodNode mn = (MethodNode) cp.getExpressionParser().parse(definition);
-					int paramsCnt = mn.getParamsCount();
-					Node[] ns = mn.getParamsToArray();
-					String[] paramNames = new String[paramsCnt];
-					Class[] paramClzzs = new Class[paramsCnt];
-					for (int i = 0; i < paramsCnt; i++) {
-						DeclarationNode n = (DeclarationNode) ns[i];
-						String name = n.getVarname();
-						String type = n.getVartype();
-						paramNames[i] = name;
-						try {
-							paramClzzs[i] = this.scriptField.getCenterMethodFactory().forName(type);
-						} catch (ClassNotFoundException e1) {
-							LH.warning(log, "Class Not found" + name);
+				if (query.startsWith("SHOW METHODS")) {
+					for (Row r : t.getRows()) {
+						String methodName = (String) r.get("MethodName");
+						String definition = (String) r.get("Definition");
+						String returnType = (String) r.get("ReturnType");
+						MethodNode mn = (MethodNode) cp.getExpressionParser().parse(definition);
+						int paramsCnt = mn.getParamsCount();
+						Node[] ns = mn.getParamsToArray();
+						String[] paramNames = new String[paramsCnt];
+						Class[] paramClzzs = new Class[paramsCnt];
+						for (int i = 0; i < paramsCnt; i++) {
+							DeclarationNode n = (DeclarationNode) ns[i];
+							String name = n.getVarname();
+							String type = n.getVartype();
+							paramNames[i] = name;
+							try {
+								paramClzzs[i] = this.scriptField.getCenterMethodFactory().forName(type);
+							} catch (ClassNotFoundException e1) {
+								LH.warning(log, "Class Not found" + name);
+							}
 						}
-					}
-					try {
-						Class<?> returnTypeClzz = this.scriptField.getCenterMethodFactory().forName(returnType);
-						DeclaredMethodFactory dmf = new DeclaredMethodFactory(returnTypeClzz, methodName, paramNames, paramClzzs, (byte) 0);
-						scriptField.addMethodFactory(dmf);
-						onStartupScriptField.addMethodFactory(dmf);
-					} catch (ClassNotFoundException e) {
-						e.printStackTrace();
-					}
+						try {
+							Class<?> returnTypeClzz = this.scriptField.getCenterMethodFactory().forName(returnType);
+							DeclaredMethodFactory dmf = new DeclaredMethodFactory(returnTypeClzz, methodName, paramNames, paramClzzs, (byte) 0);
+							scriptField.addMethodFactory(dmf);
+							onStartupScriptField.addMethodFactory(dmf);
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
+						}
 
+					}
+				} else {
+					for (Row r : t.getRows()) {
+						String methodName = (String) r.get("ProcedureName");
+						String args = (String) r.get("Arguments");
+						String returnType = (String) r.get("ReturnType");
+						String[] params = SH.split(",", args);
+						//						String[] params = SH.isnt(args) ? new String[0] : SH.split(",",args);
+						int paramsCnt = params.length;
+						String[] paramNames = new String[paramsCnt];
+						Class[] paramClzzs = new Class[paramsCnt];
+						for (int i = 0; i < paramsCnt; i++) {
+							String param = params[i];
+							String name = SH.beforeFirst(param, " ");
+							String type = SH.afterFirst(param, " ").contains(" ") ? SH.beforeFirst(SH.afterFirst(param, " "), " ") : SH.afterFirst(param, " ");
+							paramNames[i] = name;
+							try {
+								paramClzzs[i] = this.scriptField.getCenterMethodFactory().forName(type);
+							} catch (ClassNotFoundException e1) {
+								LH.warning(log, "Class Not found" + name);
+							}
+						}
+						try {
+							Class<?> returnTypeClzz = this.scriptField.getCenterMethodFactory().forName(returnType);
+							DeclaredMethodFactory dmf = new DeclaredMethodFactory(returnTypeClzz, methodName, paramNames, paramClzzs, (byte) 0);
+							scriptField.registerProcedure(dmf);
+							onStartupScriptField.registerProcedure(dmf);
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
+						}
+
+					}
 				}
+
 			}
 		}
 	}
