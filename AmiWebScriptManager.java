@@ -97,8 +97,8 @@ public class AmiWebScriptManager {
 
 	static {
 
-		CALLBACK_DEF_ONSTARTUP.addDesc("Called once, after the layout(s) have successfully loaded, but before the query-on-startup datamodels are executed");
-		CALLBACK_DEF_ONSTARTUP_COMPLETE.addDesc("Called once, after the layout(s) have successfully loaded and preferences have been loaded or ignored");
+		CALLBACK_DEF_ONSTARTUP.addDesc("Called once, after the layout(s) have succesfully loaded, but before the query-on-startup datamodels are executed");
+		CALLBACK_DEF_ONSTARTUP_COMPLETE.addDesc("Called once, after the layout(s) have succesfully loaded and preferences have been loaded or ignored");
 		CALLBACK_DEF_ONUSERPREFSLOADING.addDesc(
 				"Called before the user preferences are imported/applied to the layout. You can mutate the passed in parameters in order to change what preferences are actually applied.This includes when the layout is first loaded and the user has associated preferences, or then the preferences are imported/uploaded by the user");
 		CALLBACK_DEF_ONUSERPREFSLOADING.addParamDesc(0,
@@ -148,14 +148,12 @@ public class AmiWebScriptManager {
 	private boolean shouldDebugExecutedAmiScript;
 	final private int warnSlowAmiScriptMs;
 	final private int defalutTimeoutMs;
-	final private int defaultLimit;
 
 	public AmiWebScriptManager(AmiWebService service, Map<String, AmiScriptClassPluginWrapper> customClassPlugins) {
 		this.service = service;
 		ContainerTools tools = service.getPortletManager().getTools();
 		this.warnSlowAmiScriptMs = tools.getOptional(AmiWebProperties.PROPERTY_AMI_SLOW_AQMISCRIPT_WARN_MS, 1000);
 		this.defalutTimeoutMs = AmiUtils.getDefaultTimeout(tools);
-		this.defaultLimit = AmiUtils.getDefaultLimit(tools);
 		setShouldDebugExecutedAmiScript(false);//TODO: this should be a user preference
 		this.externFactory = new BasicExternFactoryManager();
 		this.externFactory.addLanguage("python", new PythonExtern());
@@ -839,9 +837,6 @@ public class AmiWebScriptManager {
 	public void onStyleVarsChanged(String id) {
 		for (Layout i : this.layouts.values())
 			i.style2ConstsCache.remove(id);
-	}
-	public int getDefaultLimit() {
-		return defaultLimit;
 	}
 
 }

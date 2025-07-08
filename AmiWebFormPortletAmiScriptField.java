@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.f1.ami.amicommon.AmiUtils;
+import com.f1.ami.web.centermanager.autocomplete.AmiCenterManagerImdbScriptManager;
+import com.f1.ami.web.centermanager.autocomplete.AutoCompleteListener;
 import com.f1.base.CalcFrame;
 import com.f1.suite.web.JsFunction;
 import com.f1.suite.web.portal.PortletManager;
@@ -16,9 +18,17 @@ import com.f1.utils.OH;
 import com.f1.utils.SH;
 import com.f1.utils.casters.Caster_Integer;
 import com.f1.utils.casters.Caster_String;
+import com.f1.utils.structs.table.derived.BasicMethodFactory;
+import com.f1.utils.structs.table.derived.MethodFactory;
+import com.f1.utils.structs.table.derived.ParamsDefinition;
 import com.f1.utils.structs.table.stack.BasicCalcTypes;
 
-public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
+public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField implements AutoCompleteListener {
+	public static final byte LANGUAGE_SCOPE_CENTER_SCRIPT = 0;
+	public static final byte LANGUAGE_SCOPE_WEB_SCRIPT = 1;
+	//add
+	public byte scope = LANGUAGE_SCOPE_WEB_SCRIPT;
+
 	public static final String JSNAME = "AmiCodeField";
 	public static final Set<String> AVAILABLE_FLASH_COLORS = new HashSet<String>();
 	public static final Set<String> AVAILABLE_ANNOTATION_TYPES = new HashSet<String>();
@@ -32,6 +42,8 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 		AVAILABLE_ANNOTATION_TYPES.add("info");
 		AVAILABLE_ANNOTATION_TYPES.add("warning");
 	}
+	private int cursorPos = -1;
+	private boolean cursonPositionMoved;
 	private int pageX, pageY;
 	private int scrollTop, scrollLeft;
 	private String mode = "amiscript";
@@ -62,6 +74,13 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 	private AmiWebScriptManagerForLayout scriptManager;
 	private AmiWebDomObject thiz;
 
+	//add
+	private AmiCenterManagerImdbScriptManager centerScriptManager;
+
+	//add
+	private String autoCompleteMethodName;
+	private Class[] autoCompleteVarType;
+
 	public AmiWebFormPortletAmiScriptField(String title, PortletManager manager, String layoutAlias) {
 		super(String.class, title);
 		this.service = AmiWebUtils.getService(manager);
@@ -75,9 +94,57 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 			this.usedVariableNames.add(s);
 		this.setValueNoFire("");
 	}
+
+	public AmiWebFormPortletAmiScriptField(String title, PortletManager manager, byte scope) {
+		super(String.class, title);
+		this.service = AmiWebUtils.getService(manager);
+		this.scope = scope;
+		this.amiLayoutAlias = "";
+		if (scope == LANGUAGE_SCOPE_CENTER_SCRIPT) {
+			this.centerScriptManager = new AmiCenterManagerImdbScriptManager(service);
+			this.varMapping = new com.f1.utils.structs.table.stack.BasicCalcTypes();
+			this.autoCompletion = new AmiWebScriptAutoCompletion(service, scope);
+		}
+
+		this.amiEditorKeyboard = service.getVarsManager().getSetting(AmiWebConsts.USER_SETTING_AMI_EDITOR_KEYBOARD);
+		this.stringBuff = new StringBuilder();
+		for (String s : this.varMapping.getVarKeys())
+			this.usedVariableNames.add(s);
+		this.setValueNoFire("");
+	}
+
 	public void setThis(AmiWebDomObject thiz) {
 		addVariable("this", thiz.getClass());
 		this.thiz = thiz;
+	}
+
+	@Override
+	public FormPortletTextEditField moveCursor(int i) {
+		if (i == this.cursorPos)
+			return this;
+		setCursorPosition(i);
+		cursonPositionMoved = true;
+		fireConfigChanged();
+		return this;
+	}
+
+	@Override
+	public FormPortletTextEditField insertAtCursor(String value) {
+		if (value != null) {
+			final String t = getValue();
+			if (t == null) {
+				setValue(value.toString());
+				this.cursorPos = getValue().length();
+			} else if (value.length() > 0) {
+				setValue(SH.splice(t, getCursorPosition(), 0, value));
+				moveCursor(getCursorPosition() + value.length());
+			}
+		}
+		return this;
+	}
+
+	@Override
+	public void setSelection(int start, int end) {
 	}
 
 	@Override
@@ -87,7 +154,7 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 	@Override
 	public void handleCallback(String action, Map<String, String> attributes) {
 		if ("updateCursor".equals(action)) {
-			super.setCursorPositionNoFire(CH.getOrThrow(Caster_Integer.INSTANCE, attributes, "pos"));
+			this.cursorPos = CH.getOrThrow(Caster_Integer.INSTANCE, attributes, "pos");
 			this.pageX = CH.getOrThrow(Caster_Integer.INSTANCE, attributes, "pageX");
 			this.pageY = CH.getOrThrow(Caster_Integer.INSTANCE, attributes, "pageY");
 		} else if ("showAC".equals(action)) {
@@ -102,11 +169,23 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 			int row = CH.getOrThrow(Caster_Integer.INSTANCE, attributes, "row");
 			setOrUnsetBreakpoint(row);
 		} else if ("click".equals(action)) {
+			//			int row = CH.getOrThrow(Caster_Integer.INSTANCE, attributes, "row");
+			//			Boolean ctrlKey = CH.getOrThrow(Caster_Boolean.INSTANCE, attributes, "ctrlKey");
+			//			Boolean shiftKey = CH.getOrThrow(Caster_Boolean.INSTANCE, attributes, "shiftKey");
+			//			Boolean altKey = CH.getOrThrow(Caster_Boolean.INSTANCE, attributes, "altKey");
+			//			int mask = 0;
+			//			if (ctrlKey)
+			//				mask |= Form.KEY_CTRL;
+			//			if (shiftKey)
+			//				mask |= Form.KEY_SHIFT;
+			//			if (altKey)
+			//				mask |= Form.KEY_ALT;
+			//			onSpecialKeyPressed(this.getForm(), this, -1, mask, cursorPos);
 		} else
 			super.handleCallback(action, attributes);
 	};
 	@Override
-	public boolean onUserValueChanged(Map<String, String> attributes) {
+	public boolean onUserValueChanged(Map<String, String> attributes, String objectName, StringBuilder pendingJs) {
 		if (this.isDisabled() == false) {
 			String type = CH.getOrNoThrow(Caster_String.INSTANCE, attributes, "type", "");
 			if (SH.equals(type, "onchange")) {
@@ -142,6 +221,44 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 			setValue(SH.splice(getValue(), position, 0, text));
 		setCursorPosition(position + text.length());
 	}
+	@Override
+	public void setCursorPosition(int cursorPosition) {
+		this.cursorPos = cursorPosition;
+		fireConfigChanged();
+	}
+
+	@Override
+	public int getCursorPosition() {
+		return cursorPos;
+	}
+	@Override
+	public void rebuildJs(String jsObjectName, StringBuilder pendingJs) {
+		super.rebuildJs(jsObjectName, pendingJs);
+		new JsFunction(pendingJs, jsObjectName, "moveScrollTop").addParam(this.scrollTop).end();
+		new JsFunction(pendingJs, jsObjectName, "moveScrollLeft").addParam(this.scrollLeft).end();
+		new JsFunction(pendingJs, jsObjectName, "moveCursor").addParam(cursorPos).end();
+		new JsFunction(pendingJs, jsObjectName, "setBreakpoints").addParam(this.breakpoints).end();
+		new JsFunction(pendingJs, jsObjectName, "setMode").addParamQuoted(mode).end();
+		new JsFunction(pendingJs, jsObjectName, "setKeyboardHandler").addParamQuoted(amiEditorKeyboard).end();
+		new JsFunction(pendingJs, jsObjectName, "updateHighlight").addParam(this.curHighlightedRow).end();
+		//add
+		//********************
+		if (this.autoCompleteMethodName != null && this.autoCompleteVarType != null) {
+			JsFunction js = new JsFunction(pendingJs, jsObjectName, "registerMethodAutoComplete").addParamQuoted(this.autoCompleteMethodName);//.addParamQuoted(param).end();
+			for (Class<?> clzz : this.autoCompleteVarType)
+				js.addParamQuoted(clzz.getSimpleName());
+			js.end();
+		}
+
+		//********************
+		cursonPositionMoved = false;
+		if (shouldScroll) {
+			new JsFunction(pendingJs, jsObjectName, "scrollToLine").addParam(this.curScrolledRow).end();
+			this.shouldScroll = false;
+			this.curScrolledRow = -1;
+		}
+		updateAnnotation(jsObjectName, pendingJs);
+	}
 
 	private void updateAnnotation(String jsObjectName, StringBuilder pendingJs) {
 		if (shouldFlash) {
@@ -156,24 +273,9 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 		}
 	}
 	@Override
-	public void updateJs(StringBuilder pendingJs) {
-		if (hasChanged(MASK_REBUILD)) {
-			new JsFunction(pendingJs, jsObjectName, "moveScrollTop").addParam(this.scrollTop).end();
-			new JsFunction(pendingJs, jsObjectName, "moveScrollLeft").addParam(this.scrollLeft).end();
-			new JsFunction(pendingJs, jsObjectName, "setBreakpoints").addParam(this.breakpoints).end();
-			new JsFunction(pendingJs, jsObjectName, "setMode").addParamQuoted(mode).end();
-			new JsFunction(pendingJs, jsObjectName, "setKeyboardHandler").addParamQuoted(amiEditorKeyboard).end();
-			new JsFunction(pendingJs, jsObjectName, "updateHighlight").addParam(this.curHighlightedRow).end();
-		}
-		super.updateJs(pendingJs);
-		if (hasChanged(FormPortletField.MASK_CUSTOM | FormPortletField.MASK_REBUILD)) {
-			if (shouldScroll) {
-				new JsFunction(pendingJs, jsObjectName, "scrollToLine").addParam(this.curScrolledRow).end();
-				this.shouldScroll = false;
-				this.curScrolledRow = -1;
-			}
-			updateAnnotation(jsObjectName, pendingJs);
-		}
+	public void updateJs(String jsObjectName, StringBuilder pendingJs) {
+		super.updateJs(jsObjectName, pendingJs);
+		updateAnnotation(jsObjectName, pendingJs);
 	}
 	public HashSet<Integer> getBreakpoints() {
 		return this.breakpoints;
@@ -190,13 +292,13 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 	public void highlightRow(int row) {
 		if (row != this.curHighlightedRow && row >= 0) {
 			this.curHighlightedRow = row;
-			flagChange(MASK_CUSTOM);
+			fireConfigChanged();
 		}
 	}
 	public void clearHighlight() {
 		if (this.curHighlightedRow >= 0) {
 			this.curHighlightedRow = -1;
-			flagChange(MASK_CUSTOM);
+			fireConfigChanged();
 		}
 	}
 	public int getHighlightedRowNum() {
@@ -211,7 +313,7 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 	public void scrollToRow(int rowNum) {
 		this.curScrolledRow = rowNum;
 		this.shouldScroll = true;
-		flagChange(MASK_CUSTOM);
+		fireConfigChanged();
 	}
 	@Override
 	public AmiWebFormPortletAmiScriptField setName(String name) {
@@ -223,7 +325,7 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 		if (OH.eq(this.mode, mode))
 			return;
 		this.mode = mode;
-		flagChange(MASK_CUSTOM);
+		this.fireConfigChanged();
 	}
 
 	@Override
@@ -250,7 +352,7 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 			for (String i : constsMap.getVarKeys())
 				this.autoCompletion.addVariable(i, constsMap.getType(i));
 		}
-		this.autoCompletion.reset(this, this.getCursorPosition());
+		this.autoCompletion.reset(this, this.cursorPos);
 	}
 
 	public String getNextVariableName(String suggestedName) {
@@ -288,7 +390,7 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 	}
 
 	public void moveCursor(int position, boolean scrollToRow) {
-		this.setCursorPosition(position);
+		this.moveCursor(position);
 		if (scrollToRow)
 			this.scrollToRow(SH.getLinePosition(this.getValue(), position).getA());
 	}
@@ -299,7 +401,8 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 		this.flashRowEnd = flashRowEnd;
 		this.flashRowColor = flashColorName;
 		this.shouldFlash = true;
-		flagChange(MASK_CUSTOM);
+		//		fireConfigChanged();
+		setHasUpdate(true);
 	}
 	public void resetFlash() {
 		this.shouldFlash = false;
@@ -315,7 +418,8 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 		this.annotationRow = row;
 		this.annotationType = annotationType;
 		this.annotationMessage = annotationMessage;
-		flagChange(MASK_CUSTOM);
+		setHasUpdate(true);
+		//		fireConfigChanged();
 	}
 	public void clearAnnotation() {
 		if (this.clearAnnotation || !this.annotate)
@@ -324,6 +428,44 @@ public class AmiWebFormPortletAmiScriptField extends FormPortletTextEditField {
 		this.annotate = false;
 		this.annotationMessage = null;
 		this.annotationRow = -1;
-		flagChange(MASK_CUSTOM);
+		setHasUpdate(true);
+		//		fireConfigChanged();
 	}
+
+	@Override
+	public void onAutoComplete(ParamsDefinition params) {
+		System.out.println("doing autocomplete");
+		this.autoCompleteMethodName = params.getMethodName();
+		this.autoCompleteVarType = params.getParamTypes();
+
+		fireConfigChanged();
+
+	}
+
+	//add, for testing
+	//	public void addMethodFactory(MethodFactory toAdd) {
+	//		this.service.getScriptManager(this.amiLayoutAlias).getMethodFactory().addFactory(toAdd);
+	//	}
+
+	public void addMethodFactory(MethodFactory toAdd) {
+		this.autoCompletion.getMethodFactory().addFactory(toAdd);
+	}
+
+	public void registerProcedure(MethodFactory toAdd) {
+		this.autoCompletion.registerProcedure(toAdd);
+	}
+
+	//add, for center mode only 
+	public AmiCenterManagerImdbScriptManager getCenterScriptManager() {
+		if (this.scope != LANGUAGE_SCOPE_CENTER_SCRIPT)
+			throw new IllegalStateException("cannot access center script manager in scope:" + this.scope);
+		return this.centerScriptManager;
+	}
+
+	public BasicMethodFactory getCenterMethodFactory() {
+		if (this.scope != LANGUAGE_SCOPE_CENTER_SCRIPT)
+			throw new IllegalStateException("cannot access center script manager in scope:" + this.scope);
+		return this.centerScriptManager.getMethodFactory();
+	}
+
 }

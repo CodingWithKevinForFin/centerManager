@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 
 import com.f1.ami.amiscript.AmiAbstractMemberMethod;
 import com.f1.ami.web.amiscript.AmiWebAmiScriptDerivedCellParser.AmiWebDeclaredMethodFactory;
+import com.f1.ami.web.centermanager.autocomplete.AmiCenterManagerImdbScriptManager;
 import com.f1.base.IterableAndSize;
 import com.f1.stringmaker.StringTranslator;
 import com.f1.suite.web.menu.WebMenu;
@@ -33,6 +34,7 @@ import com.f1.utils.impl.CharMatcher;
 import com.f1.utils.impl.StringCharReader;
 import com.f1.utils.string.JavaExpressionParser;
 import com.f1.utils.structs.LongKeyMap;
+import com.f1.utils.structs.table.derived.BasicMethodFactory;
 import com.f1.utils.structs.table.derived.DeclaredMethodFactory;
 import com.f1.utils.structs.table.derived.DerivedCellCalculator;
 import com.f1.utils.structs.table.derived.DerivedCellCalculatorMethod;
@@ -75,6 +77,8 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 		public static final byte TYPE_FUNC = 5;
 		public static final byte TYPE_KEYWORD = 6;
 		public static final byte TYPE_CONST = 7;
+		//add
+		public static final byte TYPE_PROCEDURE = 8;
 		long id;
 		final String value;
 		final String displayHtml;
@@ -108,6 +112,18 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 			this.fullForm = fullForm;
 		}
 
+		public MenuOption(long id, byte type, String value, String displayHtml, int replaceStart, int replaceEnd, String fullForm, ParamsDefinition definition) {
+			super();
+			this.id = id;
+			this.type = type;
+			this.value = value;
+			this.displayHtml = displayHtml;
+			this.replaceStart = replaceStart;
+			this.replaceEnd = replaceEnd;
+			this.fullForm = fullForm;
+			this.paramsDefinition = definition;
+		}
+
 		@Override
 		public String toString() {
 			return "MenuOption [id=" + id + ", value=" + value + ", displayHtml=" + displayHtml + ", type=" + type + ", replaceStart=" + replaceStart + ", replaceEnd=" + replaceEnd
@@ -119,6 +135,8 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 	private int cursorPosition;
 	private com.f1.utils.structs.table.stack.BasicCalcTypes varTypes = new com.f1.utils.structs.table.stack.BasicCalcTypes();
 	private Set<String> tableNames = new HashSet<String>();
+	//add
+	private Set<MethodFactory> procedureNames = new HashSet<MethodFactory>();
 	private final StringBuilder tmpBuf = new StringBuilder();
 	private final StringCharReader reader = new StringCharReader();
 	private int cmdStart;
@@ -128,8 +146,8 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 	private MethodFactoryManager factory;
 	private LongKeyMap<MenuOption> options = new LongKeyMap<MenuOption>();
 	private Set<String> types = new HashSet<String>();
-	private AmiWebFormPortletAmiScriptField field;
-	private AmiWebScriptManagerForLayout scriptManager;
+	private AmiWebFormPortletAmiScriptField field; //specific
+	private AmiWebScriptManagerForLayout scriptManager; //specific
 	private int funcStart = -1;
 	private boolean funcEnd = false;
 
@@ -138,6 +156,13 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 	private MethodDerivedCellCalculator activeMethod;
 	private Class<?> activeType;
 	final private AmiWebService service;
+
+	//add
+	public byte scope = AmiWebFormPortletAmiScriptField.LANGUAGE_SCOPE_WEB_SCRIPT;
+	private AmiCenterManagerImdbScriptManager centerScriptManager; //specific
+
+	//test, this should be a local var instead
+	public SqlCompleter callTypes;
 
 	public AmiWebScriptAutoCompletion(AmiWebService service, AmiWebScriptManagerForLayout sm) {
 		this.service = service;
@@ -165,8 +190,8 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 		createTypes.addCompleter(new SqlCompleter("EXECUTE ", null));
 		createTypes.addCompleter(new SqlCompleter("USE EXECUTE ", null));
 
-		this.factory = sm.getMethodFactory();
-		this.scriptManager = sm;
+		this.factory = sm.getMethodFactory();//specific
+		this.scriptManager = sm;//specific
 		//		for (MappingEntry<String, Class<?>> type : this.scriptManager.getGlobalVarTypes().entries())
 		//			addVariable(type.getKey(), type.getValue());
 		types.add("int");
@@ -183,6 +208,61 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 				this.types.add(name);
 		}
 	}
+
+	//ADD
+	public AmiWebScriptAutoCompletion(AmiWebService service, byte scope) {
+		this.scope = scope;
+
+		this.service = service;
+		this.sqlCompleter = new MultiCompleter();
+		MultiCompleter alterTypes = new MultiCompleter();
+		alterTypes.addCompleter(new SqlCompleter("ADD ? ?", null));
+		alterTypes.addCompleter(new SqlCompleter("DROP ?", null));
+		alterTypes.addCompleter(new SqlCompleter("MODIFY ? AS ? ?", null));
+		alterTypes.addCompleter(new SqlCompleter("RENAME ? TO ?", null));
+		MultiCompleter createTypes = new MultiCompleter();
+		createTypes.addCompleter(new SqlCompleter("SELECT * FROM _", null));
+		createTypes.addCompleter(new SqlCompleter("PREPARE * FROM _", null));
+		createTypes.addCompleter(new SqlCompleter("ANALYZE * FROM _", null));
+		MultiCompleter updateTypes = new MultiCompleter();
+		updateTypes.addCompleter(new SqlCompleter("SET", null));
+
+		//add
+		callTypes = new SqlCompleter("CALL _", null);
+		this.sqlCompleter.addCompleter(callTypes);
+
+		this.sqlCompleter.addCompleter(new SqlCompleter("DROP TABLE _", null));
+		this.sqlCompleter.addCompleter(new SqlCompleter("RENAME TABLE _ TO ?", null));
+		this.sqlCompleter.addCompleter(new SqlCompleter("UPDATE _ ", updateTypes));
+		this.sqlCompleter.addCompleter(new SqlCompleter("ALTER TABLE _", alterTypes));
+		this.sqlCompleter.addCompleter(new SqlCompleter("CREATE TABLE ? AS", createTypes));
+		for (Completer c : createTypes.completers)
+			this.sqlCompleter.addCompleter(c);
+		createTypes.addCompleter(new SqlCompleter("EXECUTE ", null));
+		createTypes.addCompleter(new SqlCompleter("USE EXECUTE ", null));
+
+		if (scope == AmiWebFormPortletAmiScriptField.LANGUAGE_SCOPE_CENTER_SCRIPT) {
+			this.centerScriptManager = new AmiCenterManagerImdbScriptManager(service);
+			this.layoutAlias = "";
+			this.factory = centerScriptManager.getMethodFactory();
+			List<DerivedCellMemberMethod<Object>> sink = new ArrayList<DerivedCellMemberMethod<Object>>();
+			this.factory.getMemberMethods(null, null, sink);
+			for (DerivedCellMemberMethod<Object> i : sink) {
+				String name = this.factory.forType(i.getTargetType());
+				if (name != null)
+					this.types.add(name);
+			}
+		}
+
+		types.add("int");
+		types.add("long");
+		types.add("double");
+		types.add("float");
+		types.add("boolean");
+		types.add("String");
+
+	}
+
 	public void addAllVariables(com.f1.base.CalcTypes mapping) {
 		this.globalVars.putAll(mapping);
 		//		for (String name : mapping.keySet()) {
@@ -409,12 +489,20 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 				}
 				List<MenuOption> sink = new ArrayList<AmiWebScriptAutoCompletion.MenuOption>();
 				this.sqlCompleter.autoComplete(new StringCharReader(cmd).setToStringIncludesLocation(true), tableNames, sink);
+
+				//add,test
+				//				procedureNames.add("FIX_MSG_CLEAN_UP(int id)");
+				//				procedureNames.add("LOAD_HDB(int qty, double p)");
+				//				procedureNames.add("CENTER_STARTUP()");
+				callTypes.autoComplete(new StringCharReader(cmd).setToStringIncludesLocation(true), procedureNames, sink);
+
 				for (MenuOption i : sink) {
 					i.replaceEnd += cmdStart;
 					i.replaceStart += cmdStart;
 					i.id = this.options.size();
 					this.options.put(i.id, i);
 				}
+
 			}
 			for (String type : CONSTS) {
 				if (SH.startsWithIgnoreCase(type, cmd)) {
@@ -426,10 +514,13 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 			List<MethodFactory> sink = new ArrayList<MethodFactory>();
 			this.factory.getAllMethodFactories(sink);
 			for (MethodFactory i : sink) {
-				String type = i.getDefinition().getMethodName();
+				//String type = i.getDefinition().getMethodName();
+				String type = toString(i);
 				if (type != null && SH.startsWithIgnoreCase(type, cmd)) {
 					String remaining = SH.stripPrefixIgnoreCase(type, cmd, false);
-					MenuOption option = new MenuOption(this.options.size(), MenuOption.TYPE_FUNC, remaining + "(", toString(i), cp, cp, type + "(");
+					//want to change so that it also autofills the args 
+					//MenuOption option = new MenuOption(this.options.size(), MenuOption.TYPE_FUNC, remaining + "(", toString(i), cp, cp, type + "(");
+					MenuOption option = new MenuOption(this.options.size(), MenuOption.TYPE_FUNC, remaining, toString(i), cp, cp, toString(i), i.getDefinition());
 					this.options.put(option.id, option);
 				}
 			}
@@ -745,7 +836,7 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 						if (SH.is(tableName))
 							this.tableNames.add(tableName.trim());
 					} else if (type == null) {
-						if (WS.matches(c))
+						if (WS.matches(c) && !tmpBuf.toString().toUpperCase().equals("CALL")) //add, excluding "call __procedure()", call is not a type
 							type = tmpBuf.toString();
 					} else {
 						r.put(tmpBuf.toString(), type);
@@ -837,8 +928,12 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 			r.add(new BasicWebMenuLink("Jump to <i>" + description + " </i>", true, "active_type").setCssStyle("_cna=menu_item_help"));
 		}
 
-		if (!SH.endsWith(this.cmd, '.')) // exclude wizard menus when user types period
-			AmiWebMenuUtils.createMemberMethodMenu(r, AmiWebUtils.getService(this.field.getForm().getManager()), true, true, true, this.layoutAlias);
+		//add
+		if (this.scope == AmiWebFormPortletAmiScriptField.LANGUAGE_SCOPE_WEB_SCRIPT) {
+			if (!SH.endsWith(this.cmd, '.')) // exclude wizard menus when user types period
+				AmiWebMenuUtils.createMemberMethodMenu(r, AmiWebUtils.getService(this.field.getForm().getManager()), true, true, true, this.layoutAlias);
+		}
+
 		for (MenuOption i : CH.sort(getOptions(), MENU_SORTER)) {
 			if (i.parent == null)
 				optionsToMenu(r, i);
@@ -967,17 +1062,23 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 			int curLen = formLength - option.value.length();
 
 			int start = option.replaceStart - curLen;
-			if (option.type == MenuOption.TYPE_KEYWORD) {
+			if (option.type == MenuOption.TYPE_KEYWORD || option.type == MenuOption.TYPE_PROCEDURE) {
 				// for SQL and other predefined keywords, append
 				this.field.setValue(SH.splice(this.field.getValue(), option.replaceStart, option.replaceEnd - option.replaceStart, option.value));
 			} else {
 				// replace everything
 				this.field.setValue(SH.splice(this.field.getValue(), start, curLen, option.fullForm));
 			}
-			// I think this can be done in js as well: ami_scripteditor::setValue
 			if (this.field.getValue().length() > prevLen)
-				this.field.setCursorPosition(start + formLength);
+				this.field.moveCursor(start + formLength);
 			this.field.focus();
+
+			if (option.type == MenuOption.TYPE_FUNC || option.type == MenuOption.TYPE_PROCEDURE) {
+				//if the method has no arg, just move the cursor
+				boolean methodHasArg = option.paramsDefinition.getParamsCount() > 0;
+				if (methodHasArg)
+					this.field.onAutoComplete(option.paramsDefinition);
+			}
 		}
 	}
 	@Override
@@ -1129,6 +1230,144 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 			if (next != null)
 				next.autoComplete(cr, tableNames, sink);
 		}
+
+		private static String toString(MethodFactory f) {
+			ParamsDefinition def = f.getDefinition();
+			StringBuilder sb = new StringBuilder(def.getMethodName());
+			sb.append("(");
+			for (int i = 0; i < def.getParamsCount(); i++) {
+				if (i > 0)
+					sb.append(",");
+				sb.append(def.getParamName(i));
+				if (i == def.getParamsCount() - 1 && def.isVarArg())
+					sb.append(" ... ");
+			}
+			sb.append(")");
+			return sb.toString();
+
+		}
+
+		public void autoComplete(CharReader cr, Set<MethodFactory> procNames, List<MenuOption> sink) {
+			StringBuilder buf = new StringBuilder();
+			cr.setCaseInsensitive(true);
+			String soFar = cr.getText();
+			String cur = soFar; // tracks user input against valid tokens
+			String fullForm = ""; // records the complete form of a SQL command, e.g. CREATE TABLE AS
+			Boolean complete = false;
+			Set<String> procedureNames = new HashSet<String>();
+			for (MethodFactory mf : procNames)
+				procedureNames.add(toString(mf));
+			for (int i = 0; i < tokenList.length; i++) {
+				String token = tokenList[i];
+				cr.skip(WS);
+				int start = cr.getCountRead();
+				if ("?".equals(token)) {
+					cr.readUntilAny(WS, true, SH.clear(buf));
+					// accounts for user table name
+					fullForm += " " + cur;
+				} else if ("_".equals(token)) {
+					cr.readUntilAny(WS, true, SH.clear(buf));
+					int len = buf.length();
+					String t = buf.toString();
+					if (!procedureNames.contains(t)) {
+						if (cr.isEof()) {
+							//							for (String name : procedureNames)
+							//								if (SH.startsWithIgnoreCase(name, t)) {
+							//									String name2;
+							//									if (len == 0)
+							//										name2 = ' ' + name + ' ';
+							//									else
+							//										name2 = name + ' ';
+							//									sink.add(new MenuOption(0, MenuOption.TYPE_KEYWORD, name2, name, start, cr.getCountRead(), name));
+							//								}
+
+							for (MethodFactory mf : procNames) {
+								String name = toString(mf);
+								if (SH.startsWithIgnoreCase(name, t)) {
+									String name2;
+									if (len == 0)
+										name2 = ' ' + name + ' ';
+									else
+										name2 = name + ' ';
+									sink.add(new MenuOption(0, MenuOption.TYPE_PROCEDURE, name2, name, start, cr.getCountRead(), name, mf.getDefinition()));
+								}
+							}
+
+							return;
+						}
+					}
+				} else if (cr.peakSequence(token)) {
+					// check if user typed in a valid token
+					cr.expectSequence(token);
+					if (cr.skip(WS) == 0) {
+						if (!cr.isEof())
+							return;
+					}
+					// if previous token is a complete match, we need a white space before next token.
+					if (complete) {
+						fullForm += " ";
+						complete = false;
+					} else {
+						complete = true;
+					}
+					fullForm += token;
+					// check off current token, and trim.
+					cur = SH.stripPrefixIgnoreCase(cur, token, false).trim();
+				} else {
+					// check for partial match
+					cr.readUntil(CharReader.EOF, SH.clear(buf));
+					// check best match between a token and the rest of what user has typed so far
+					if (SH.startsWithIgnoreCase(token, buf)) {
+						int len = buf.length();
+						SH.clear(buf);
+						if ((start > 0 && len == 0)) {
+							buf.append(' ');
+						} else if (complete) {
+							// previous token completely matched, add whitespace
+							fullForm += " ";
+							complete = false;
+						}
+						boolean appendTables = false;
+						// grab remaining consecutive tokens for suggestion
+						for (int n = i; n < tokenList.length; n++) {
+							String token2 = tokenList[n];
+							if ("_".equals(token2)) {
+								appendTables = true;
+								break;
+							}
+							if ("?".equals(token2)) {
+								break;
+							}
+							buf.append(token2);
+							buf.append(' ');
+						}
+						String tokens = buf.toString();
+						fullForm += tokens;
+						// discount the remainder of user input from valid tokens to form the final suggestion
+						String remain = SH.stripPrefixIgnoreCase(tokens, cur, false);
+						if (appendTables) {
+							//							for (String name : procedureNames)
+							//								sink.add(new MenuOption(0, MenuOption.TYPE_KEYWORD, tokens + name, tokens + name, start, cr.getCountRead(), name));
+
+							for (MethodFactory mf : procNames) {
+								String name = toString(mf);
+								sink.add(new MenuOption(0, MenuOption.TYPE_PROCEDURE, tokens + name, tokens + name, start, cr.getCountRead(), name, mf.getDefinition()));
+							}
+
+						} else {
+							int replaceStart = soFar.length();
+							sink.add(new MenuOption(0, MenuOption.TYPE_PROCEDURE, remain, tokens, replaceStart, replaceStart, fullForm));
+						}
+
+						return;
+					} else
+						return;
+				}
+			}
+			if (next != null)
+				next.autoComplete(cr, procedureNames, sink);
+		}
+
 	}
 
 	public static void main(String a[]) {
@@ -1161,5 +1400,22 @@ public class AmiWebScriptAutoCompletion implements WebMenuListener {
 			this.scriptManager = this.service.getScriptManager(alias);
 			this.factory = scriptManager.getMethodFactory();
 		}
+	}
+
+	//add
+	public BasicMethodFactory getMethodFactory() {
+		switch (this.scope) {
+			case AmiWebFormPortletAmiScriptField.LANGUAGE_SCOPE_CENTER_SCRIPT:
+				return centerScriptManager.getMethodFactory();
+			case AmiWebFormPortletAmiScriptField.LANGUAGE_SCOPE_WEB_SCRIPT:
+				return scriptManager.getMethodFactory();
+		}
+		throw new NullPointerException();
+
+	}
+
+	public void registerProcedure(MethodFactory toAdd) {
+		this.procedureNames.add(toAdd);
+
 	}
 }
