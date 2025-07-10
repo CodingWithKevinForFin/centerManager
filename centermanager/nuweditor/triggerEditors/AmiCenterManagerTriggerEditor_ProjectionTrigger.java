@@ -16,6 +16,7 @@ import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
+import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditTriggerPortlet;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors.AmiCenterManagerTriggerEditor_ProjectionSelectEditor;
 import com.f1.base.Action;
 import com.f1.base.Row;
@@ -53,8 +54,8 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 	private Set<String>[] sourceTableColumns;
 	private Set<String> targetTableColumns;
 
-	public AmiCenterManagerTriggerEditor_ProjectionTrigger(PortletConfig config) {
-		super(config);
+	public AmiCenterManagerTriggerEditor_ProjectionTrigger(PortletConfig config, AmiCenterManagerEditTriggerPortlet mainEditor) {
+		super(config, mainEditor);
 		service = AmiWebUtils.getService(getManager());
 		allowExternalUpdatesField = form.addField(new FormPortletCheckboxField("allowExternalUpdates"));
 		allowExternalUpdatesField.setHelp("Optional. Value is either true or false (false by default)." + "<br>"
@@ -114,6 +115,10 @@ public class AmiCenterManagerTriggerEditor_ProjectionTrigger extends AmiCenterMa
 		this.form.addFormPortletListener(this);
 		this.form.addMenuListener(this);
 		this.form.setMenuFactory(this);
+	}
+
+	public AmiCenterManagerTriggerEditor_ProjectionSelectEditor getSelectsEditor() {
+		return this.selectsEditor;
 	}
 
 	public static interface Formula {

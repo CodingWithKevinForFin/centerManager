@@ -407,6 +407,7 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 			} else if ("vars".equals(key)) {
 				this.timerVarsField.setValue(value);
 				this.timerVarsField.setDefaultValue(value);
+				parseVars();
 			} else if ("script".equals(key)) {
 				this.timerScriptField.setValue(value);
 				this.timerScriptField.setDefaultValue(value);

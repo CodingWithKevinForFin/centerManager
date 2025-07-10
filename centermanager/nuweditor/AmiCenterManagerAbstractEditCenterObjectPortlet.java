@@ -38,6 +38,8 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 	public static final int DEFAULT_TOPPOS = DEFAULT_Y_SPACING;
 
 	public static final Logger log = LH.get();
+	public static final Set<String> SYSTEM_TABLES = CH.s("__CENTER", "__COLUMN", "__COMMAND", "__CONNECTION", "__DATASOURCE", "__DATASOURCE_TYPE", "__DBO", "__INDEX", "__PLUGIN",
+			"__PROCEDURE", "__PROPERTY", "__RELAY", "__REPLICATION", "__RESOURCE", "__STATS", "__TABLE", "__TIMER", "__TRIGGER");
 
 	//Width consts
 	public static final int NAME_WIDTH = 250;
@@ -133,7 +135,7 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		}
 	}
 	//this checks for any field that has been edited
-	protected void onFieldChanged(FormPortletField<?> field) {
+	public void onFieldChanged(FormPortletField<?> field) {
 		if (AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED.equals(field.getGroupName()) || this.isAdd)
 			return;
 		boolean hadNoChanges = this.editedFields.isEmpty();

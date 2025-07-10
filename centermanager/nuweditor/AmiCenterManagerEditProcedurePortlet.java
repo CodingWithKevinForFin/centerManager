@@ -282,6 +282,7 @@ public class AmiCenterManagerEditProcedurePortlet extends AmiCenterManagerAbstra
 			} else if ("arguments".equals(key)) {
 				this.argsField.setValue(value);
 				this.argsField.setDefaultValue(value);
+				parseVars();
 			} else if ("script".equals(key)) {
 				this.scriptField.setValue(value);
 				this.scriptField.setDefaultValue(value);

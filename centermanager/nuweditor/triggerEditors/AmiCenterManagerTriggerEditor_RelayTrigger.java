@@ -14,6 +14,7 @@ import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerAbstractEditCenterObjectPortlet;
+import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditTriggerPortlet;
 import com.f1.base.Action;
 import com.f1.base.Row;
 import com.f1.base.Table;
@@ -72,8 +73,8 @@ public class AmiCenterManagerTriggerEditor_RelayTrigger extends AmiCenterManager
 	private Set<String> sourceTableColumns;
 	private Set<String> targetTableColumns;
 
-	public AmiCenterManagerTriggerEditor_RelayTrigger(PortletConfig config) {
-		super(config);
+	public AmiCenterManagerTriggerEditor_RelayTrigger(PortletConfig config, AmiCenterManagerEditTriggerPortlet mainEditor) {
+		super(config, mainEditor);
 		service = AmiWebUtils.getService(getManager());
 		//row 1
 		hostField = form.addField(new FormPortletTextField(AmiCenterManagerUtils.formatRequiredField("host")));

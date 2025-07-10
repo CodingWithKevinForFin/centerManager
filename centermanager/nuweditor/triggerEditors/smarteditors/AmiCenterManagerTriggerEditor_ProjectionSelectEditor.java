@@ -126,9 +126,11 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 		this.addButton = this.addField(new FormPortletButtonField("").setValue("Add"));
 		this.addButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 250).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
 		this.addButton.setCssStyle("_fm=bold|_fg=#FFFFFF|_bg=#FFA500|style.borderRadius=5px");
+		this.addButton.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 
 		this.clearButton = this.addField(new FormPortletButtonField("").setValue("Clear"));
 		this.clearButton.setLeftPosPx(DEFAULT_LEFTPOS + COLNAME_WIDTH + DEFAULT_LEFTPOS + 340).setTopPosPx(DEFAULT_TOPPOS * 2).setHeightPx(DEFAULT_ROWHEIGHT).setWidthPx(80);
+		this.clearButton.setGroupName(AmiCenterEntityConsts.GROUP_NAME_SKIP_ONFIELDCHANGED);
 
 		this.outputField = this.addField(new FormPortletTextAreaField("Output"));
 		this.outputField.setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS * 2 + DEFAULT_ROWHEIGHT * 2).setHeightPx(DEFAULT_ROWHEIGHT * 5).setWidthPx(600);
@@ -163,10 +165,14 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 		} else if (field == this.clearButton) {
 			clearSelectClause();
 		} else if (field == this.outputField) {
-			this.selectOutput.setLength(0);
-			this.selectOutput.append(field.getValue());
+			onOutPutFieldChanged(field);
 		}
 
+	}
+
+	public void onOutPutFieldChanged(FormPortletField<?> field) {
+		this.selectOutput.setLength(0);
+		this.selectOutput.append(field.getValue());
 	}
 
 	@Override
@@ -204,11 +210,13 @@ public class AmiCenterManagerTriggerEditor_ProjectionSelectEditor extends FormPo
 		else
 			this.selectOutput.append(',').append(targetColumn).append(" = ").append(sourceExpression);
 		this.outputField.setValue(this.selectOutput.toString());
+		owner.getMainEditor().onFieldChanged(outputField);
 	}
 
 	public void clearSelectClause() {
 		this.selectOutput.setLength(0);
 		this.outputField.setValue("");
+		owner.getMainEditor().onFieldChanged(outputField);
 	}
 
 	public String getOutput() {

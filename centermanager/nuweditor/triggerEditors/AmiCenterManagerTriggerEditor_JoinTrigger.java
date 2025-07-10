@@ -11,6 +11,7 @@ import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
+import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditTriggerPortlet;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors.AmiCenterManagerTriggerEditor_JoinSelectEditor;
 import com.f1.base.Action;
 import com.f1.base.Row;
@@ -49,8 +50,8 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 	private Set<String> rightTableColumns;
 	private Set<String> resultTableColumns;
 
-	public AmiCenterManagerTriggerEditor_JoinTrigger(PortletConfig config) {
-		super(config);
+	public AmiCenterManagerTriggerEditor_JoinTrigger(PortletConfig config, AmiCenterManagerEditTriggerPortlet mainEditor) {
+		super(config, mainEditor);
 		service = AmiWebUtils.getService(getManager());
 		typeField = form.addField(new FormPortletSelectField<Short>(short.class, AmiCenterManagerUtils.formatRequiredField("type")));
 		typeField.setGroupName(AmiCenterEntityConsts.GROUP_NAME_REQUIRED_FIELD);
@@ -136,6 +137,10 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 		this.form.setMenuFactory(this);
 		addChild(form, 0, 0, 1, 1);
 		addChild(this.selectsEditor, 0, 1, 1, 4);
+	}
+
+	public AmiCenterManagerTriggerEditor_JoinSelectEditor getSelectsEditor() {
+		return this.selectsEditor;
 	}
 
 	@Override

@@ -11,6 +11,7 @@ import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
+import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditTriggerPortlet;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_JoinTrigger.Formula;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.smarteditors.AmiCenterManagerTriggerEditor_DecorateSelectEditor;
 import com.f1.base.Action;
@@ -39,10 +40,9 @@ public class AmiCenterManagerTriggerEditor_DecorateTrigger extends AmiCenterMana
 	private Set<String> sourceTableColumns;
 	private Set<String> targetTableColumns;
 
-	public AmiCenterManagerTriggerEditor_DecorateTrigger(PortletConfig config) {
-		super(config);
+	public AmiCenterManagerTriggerEditor_DecorateTrigger(PortletConfig config, AmiCenterManagerEditTriggerPortlet mainEditor) {
+		super(config, mainEditor);
 		service = AmiWebUtils.getService(getManager());
-
 		onField = form.addField(new FormPortletTextField(AmiCenterManagerUtils.formatRequiredField("on")));
 		onField.setLeftPosPx(80).setWidth(500).setHeight(25).setTopPosPx(65);
 		onField.setHasButton(true);
@@ -111,6 +111,10 @@ public class AmiCenterManagerTriggerEditor_DecorateTrigger extends AmiCenterMana
 		this.form.setMenuFactory(this);
 		addChild(form, 0, 0, 1, 1);
 		addChild(this.selectsEditor, 0, 1, 1, 4);
+	}
+
+	public AmiCenterManagerTriggerEditor_DecorateSelectEditor getSelectsEditor() {
+		return this.selectsEditor;
 	}
 
 	@Override

@@ -15,6 +15,7 @@ import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerAbstractEditCenterObjectPortlet;
+import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditTriggerPortlet;
 import com.f1.base.Action;
 import com.f1.base.Row;
 import com.f1.base.Table;
@@ -81,8 +82,8 @@ public class AmiCenterManagerTriggerEditor_AmiscirptTrigger extends AmiCenterMan
 	final private FormPortlet onStartupScriptForm;
 	final private AmiWebFormPortletAmiScriptField onStartupScriptField;
 
-	public AmiCenterManagerTriggerEditor_AmiscirptTrigger(PortletConfig config) {
-		super(config);
+	public AmiCenterManagerTriggerEditor_AmiscirptTrigger(PortletConfig config, AmiCenterManagerEditTriggerPortlet mainEditor) {
+		super(config, mainEditor);
 		service = AmiWebUtils.getService(getManager());
 		canMutateRowField = form.addField(new FormPortletCheckboxField("canMutateRow"));
 		canMutateRowField.setHelp(" If true, then any values of the row changed inside the onInsertingScript will reflect back on the row to be inserted." + "<br>"
@@ -237,7 +238,7 @@ public class AmiCenterManagerTriggerEditor_AmiscirptTrigger extends AmiCenterMan
 
 	}
 
-	private void parseVars() {
+	public void parseVars() {
 		String[] vars = SH.split(',', this.varsField.getValue());
 		JavaExpressionParser jep = new JavaExpressionParser();
 		BasicDerivedCellParser cp = new BasicDerivedCellParser(jep);

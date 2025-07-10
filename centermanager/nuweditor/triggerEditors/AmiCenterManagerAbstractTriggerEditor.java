@@ -2,6 +2,7 @@ package com.f1.ami.web.centermanager.nuweditor.triggerEditors;
 
 import java.util.Set;
 
+import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditTriggerPortlet;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.GridPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortlet;
@@ -9,14 +10,20 @@ import com.f1.suite.web.portal.impl.form.FormPortletField;
 
 public abstract class AmiCenterManagerAbstractTriggerEditor extends GridPortlet {
 	final protected FormPortlet form;
+	protected AmiCenterManagerEditTriggerPortlet mainEditor;
 
-	public AmiCenterManagerAbstractTriggerEditor(PortletConfig config) {
+	public AmiCenterManagerAbstractTriggerEditor(PortletConfig config, AmiCenterManagerEditTriggerPortlet mainEditor) {
 		super(config);
+		this.mainEditor = mainEditor;
 		form = new FormPortlet(generateConfig());
 	}
 
 	public FormPortlet getForm() {
 		return this.form;
+	}
+
+	public AmiCenterManagerEditTriggerPortlet getMainEditor() {
+		return this.mainEditor;
 	}
 
 	abstract public String getKeyValuePairs();

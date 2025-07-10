@@ -12,6 +12,8 @@ import java.util.Set;
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsRequest;
 import com.f1.ami.amicommon.msg.AmiCenterQueryDsResponse;
 import com.f1.ami.web.AmiWebFormPortletAmiScriptField;
+import com.f1.ami.web.AmiWebService;
+import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
@@ -57,6 +59,8 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 	//height const
 	private static final int OPTION_FORM_HEIGHT = 90;//common option form height
 
+	final private AmiWebService service;
+
 	//option fields
 	final private FormPortlet form;
 
@@ -82,18 +86,19 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 	public AmiCenterManagerEditTriggerPortlet(PortletConfig config, boolean isAdd) {
 		super(config, isAdd);
+		service = AmiWebUtils.getService(getManager());
 		this.form = new FormPortlet(generateConfig());
-		amiscriptEditor = new AmiCenterManagerTriggerEditor_AmiscirptTrigger(generateConfig());
+		amiscriptEditor = new AmiCenterManagerTriggerEditor_AmiscirptTrigger(generateConfig(), this);
 		this.getManager().onPortletAdded(amiscriptEditor);
-		aggEditor = new AmiCenterManagerTriggerEditor_AggregateTrigger(generateConfig());
+		aggEditor = new AmiCenterManagerTriggerEditor_AggregateTrigger(generateConfig(), this);
 		this.getManager().onPortletAdded(aggEditor);
-		projectionEditor = new AmiCenterManagerTriggerEditor_ProjectionTrigger(generateConfig());
+		projectionEditor = new AmiCenterManagerTriggerEditor_ProjectionTrigger(generateConfig(), this);
 		this.getManager().onPortletAdded(projectionEditor);
-		joinEditor = new AmiCenterManagerTriggerEditor_JoinTrigger(generateConfig());
+		joinEditor = new AmiCenterManagerTriggerEditor_JoinTrigger(generateConfig(), this);
 		this.getManager().onPortletAdded(joinEditor);
-		decorateEditor = new AmiCenterManagerTriggerEditor_DecorateTrigger(generateConfig());
+		decorateEditor = new AmiCenterManagerTriggerEditor_DecorateTrigger(generateConfig(), this);
 		this.getManager().onPortletAdded(decorateEditor);
-		relayEditor = new AmiCenterManagerTriggerEditor_RelayTrigger(generateConfig());
+		relayEditor = new AmiCenterManagerTriggerEditor_RelayTrigger(generateConfig(), this);
 		this.getManager().onPortletAdded(relayEditor);
 
 		formAndTriggerConfigGrid = new GridPortlet(generateConfig());
@@ -128,6 +133,11 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		triggerOnField.setWidth(ON_WIDTH).setHeightPx(DEFAULT_ROWHEIGHT).setLeftPosPx(DEFAULT_LEFTPOS).setTopPosPx(DEFAULT_TOPPOS + DEFAULT_ROWHEIGHT * 2);
 		triggerOnField.setBgColor("#ffffff");
 		triggerOnField.setBorderColor("00FFFFFF");
+		//set options for on field using the system object manager
+		for (String k : CH.sort(service.getSystemObjectsManager().getTableNames())) {
+			if (!SYSTEM_TABLES.contains(k))
+				triggerOnField.addOption(k, k);
+		}
 
 		if (!isAdd) {
 			this.form.addField(enableEditingCheckbox);
@@ -143,7 +153,6 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 
 		setRowSize(1, buttonsFp.getButtonPanelHeight());
 		this.form.addFormPortletListener(this);
-		sendQueryToBackend("SELECT TableName FROM SHOW TABLES WHERE DefinedBy==\"USER\";");
 	}
 
 	public AmiCenterManagerEditTriggerPortlet(PortletConfig config, String triggerSql) {
@@ -216,56 +225,79 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 			short type = this.triggerTypeField.getValue();
 			updateTriggerTemplate(type);
 		} else if (field == this.triggerOnField) {
-			LinkedHashSet<String> onNames = ((FormPortletMultiCheckboxField) field).getValue();
-			String[] namesArr = onNames.toArray(new String[0]);
-			switch (this.triggerTypeField.getValue()) {
-				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_JOIN:
-					if (namesArr.length == 3) {
-						String leftTable = namesArr[0];
-						String rightTable = namesArr[1];
-						String resultTable = namesArr[2];
-						joinEditor.setLeftTable(leftTable);
-						joinEditor.setRightTable(rightTable);
-						joinEditor.setResultTable(resultTable);
-					} else
-						joinEditor.resetDependency();
-					break;
-				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AGGREGATE:
-					if (namesArr.length == 2) {
-						String sourceTable = namesArr[0];
-						String targetTable = namesArr[1];
-						aggEditor.setSourceTable(sourceTable);
-						aggEditor.setTargetTable(targetTable);
-					} else
-						aggEditor.resetDependency();
-				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_PROJECTION:
-					if (namesArr.length >= 2) {
-						List<String> sourceTables = new ArrayList<>(Arrays.asList(namesArr).subList(0, namesArr.length - 1));
-						String targetTable = (String) namesArr[namesArr.length - 1];
-						projectionEditor.setSourceTable(sourceTables);
-						projectionEditor.setTargetTable(targetTable);
-					} else
-						projectionEditor.resetDependency();
-				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_DECORATE:
-					if (namesArr.length == 2) {
-						String sourceTable = namesArr[0];
-						String targetTable = namesArr[1];
-						decorateEditor.setSourceTable(sourceTable);
-						decorateEditor.setTargetTable(targetTable);
-					} else
-						decorateEditor.resetDependency();
-				case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_RELAY:
-					if (namesArr.length == 1) {
-						String sourceTable = namesArr[0];
-						relayEditor.setSourceTable(sourceTable);
-						//relayEditor.setTargetTable(targetTable);
-					} else
-						relayEditor.resetDependency();
-			}
+			onTriggerOnClauseChanged(field);
 		} else {
 			//other field changes go here
 			OH.assertTrue(!this.isAdd);
 			onFieldChanged(field);
+		}
+	}
+
+	@Override
+	public void onFieldChanged(FormPortletField<?> field) {
+		super.onFieldChanged(field);
+		if ("output".equals(field.getName())) {
+			if (field.getForm() == this.aggEditor.getGroupByEditor()) {
+				this.aggEditor.getGroupByEditor().onOutPutFieldChanged(field);
+			} else if (field.getForm() == this.aggEditor.getSelectsEditor()) {
+				this.aggEditor.getSelectsEditor().onOutPutFieldChanged(field);
+			} else if (field.getForm() == this.decorateEditor.getSelectsEditor()) {
+				this.decorateEditor.getSelectsEditor().onOutPutFieldChanged(field);
+			} else if (field.getForm() == this.joinEditor.getSelectsEditor()) {
+				this.joinEditor.getSelectsEditor().onOutPutFieldChanged(field);
+			} else if (field.getForm() == this.projectionEditor.getSelectsEditor()) {
+				this.projectionEditor.getSelectsEditor().onOutPutFieldChanged(field);
+			}
+		}
+
+	}
+
+	public void onTriggerOnClauseChanged(FormPortletField<?> field) {
+		LinkedHashSet<String> onNames = ((FormPortletMultiCheckboxField) field).getValue();
+		String[] namesArr = onNames.toArray(new String[0]);
+		switch (this.triggerTypeField.getValue()) {
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_JOIN:
+				if (namesArr.length == 3) {
+					String leftTable = namesArr[0];
+					String rightTable = namesArr[1];
+					String resultTable = namesArr[2];
+					joinEditor.setLeftTable(leftTable);
+					joinEditor.setRightTable(rightTable);
+					joinEditor.setResultTable(resultTable);
+				} else
+					joinEditor.resetDependency();
+				break;
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AGGREGATE:
+				if (namesArr.length == 2) {
+					String sourceTable = namesArr[0];
+					String targetTable = namesArr[1];
+					aggEditor.setSourceTable(sourceTable);
+					aggEditor.setTargetTable(targetTable);
+				} else
+					aggEditor.resetDependency();
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_PROJECTION:
+				if (namesArr.length >= 2) {
+					List<String> sourceTables = new ArrayList<>(Arrays.asList(namesArr).subList(0, namesArr.length - 1));
+					String targetTable = (String) namesArr[namesArr.length - 1];
+					projectionEditor.setSourceTable(sourceTables);
+					projectionEditor.setTargetTable(targetTable);
+				} else
+					projectionEditor.resetDependency();
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_DECORATE:
+				if (namesArr.length == 2) {
+					String sourceTable = namesArr[0];
+					String targetTable = namesArr[1];
+					decorateEditor.setSourceTable(sourceTable);
+					decorateEditor.setTargetTable(targetTable);
+				} else
+					decorateEditor.resetDependency();
+			case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_RELAY:
+				if (namesArr.length == 1) {
+					String sourceTable = namesArr[0];
+					relayEditor.setSourceTable(sourceTable);
+					//relayEditor.setTargetTable(targetTable);
+				} else
+					relayEditor.resetDependency();
 		}
 	}
 
@@ -277,6 +309,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 			if (fpf != this.enableEditingCheckbox)
 				fpf.setDisabled(!enable);
 		}
+		onTriggerOnClauseChanged(this.triggerOnField);
 		//enable/disable all the option fields
 		this.curEditor.enableEdit(enable);
 
@@ -344,7 +377,6 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 			if ("triggerName".equals(key)) {
 				this.triggerNameField.setValue(value);
 				this.triggerNameField.setDefaultValue(value);
-				//this.triggerNameField.setCorrelationData(value);
 			} else if ("triggerType".equals(key)) {
 				continue;
 			} else if ("triggerOn".equals(key)) {
@@ -385,9 +417,29 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 				} else if (fpf instanceof FormPortletTextAreaField) {
 					((FormPortletTextAreaField) fpf).setValue(value);
 					((FormPortletTextAreaField) fpf).setDefaultValue(value);
+					if ("output".equals(fpf.getName())) {
+						if (curEditor == this.aggEditor) {
+							if ("selects".equals(key))
+								aggEditor.getSelectsEditor().onOutPutFieldChanged(fpf);
+							else if ("groupBys".equals(key))
+								aggEditor.getGroupByEditor().onOutPutFieldChanged(fpf);
+						} else if (curEditor == this.decorateEditor) {
+							if ("selects".equals(key))
+								decorateEditor.getSelectsEditor().onOutPutFieldChanged(fpf);
+						} else if (curEditor == this.joinEditor) {
+							if ("selects".equals(key))
+								joinEditor.getSelectsEditor().onOutPutFieldChanged(fpf);
+						} else if (curEditor == this.projectionEditor) {
+							if ("selects".equals(key))
+								projectionEditor.getSelectsEditor().onOutPutFieldChanged(fpf);
+						}
+					}
+
 				} else if (fpf instanceof AmiWebFormPortletAmiScriptField) {
 					((AmiWebFormPortletAmiScriptField) fpf).setValue(value);
 					((AmiWebFormPortletAmiScriptField) fpf).setDefaultValue(value);
+					if (fpf == this.curEditor.getFieldByName("vars") && this.curEditor == this.amiscriptEditor)
+						this.amiscriptEditor.parseVars();
 				} else if (fpf instanceof FormPortletCheckboxField) {
 					if ("true".equals(value)) {
 						((FormPortletCheckboxField) fpf).setValue(true);
