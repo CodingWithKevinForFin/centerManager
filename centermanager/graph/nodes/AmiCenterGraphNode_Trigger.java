@@ -1,6 +1,6 @@
 package com.f1.ami.web.centermanager.graph.nodes;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.f1.ami.web.centermanager.AmiWebCenterGraphManager;
@@ -8,7 +8,13 @@ import com.f1.ami.web.centermanager.AmiWebCenterGraphManager;
 public class AmiCenterGraphNode_Trigger extends AmiCenterGraphAbstractNode {
 
 	public static final byte CODE = AmiCenterGraphNode.TYPE_TRIGGER;
-	private Set<AmiCenterGraphNode_Table> bindingTables = new HashSet<AmiCenterGraphNode_Table>();
+	private Set<AmiCenterGraphNode_Table> bindingTables = new LinkedHashSet<AmiCenterGraphNode_Table>();
+
+	//add
+	private Set<AmiCenterGraphNode_Table> sourceTables = new LinkedHashSet<AmiCenterGraphNode_Table>();
+	private Set<AmiCenterGraphNode_Table> sinkTables = new LinkedHashSet<AmiCenterGraphNode_Table>();
+	//TODO: add triggertype
+	private short triggerType = -1;
 
 	public AmiCenterGraphNode_Trigger(AmiWebCenterGraphManager manager, long uid, String label) {
 		super(manager, uid, label);
@@ -30,6 +36,22 @@ public class AmiCenterGraphNode_Trigger extends AmiCenterGraphAbstractNode {
 
 	public Set<AmiCenterGraphNode_Table> getBindingTables() {
 		return this.bindingTables;
+	}
+
+	public void addSourceTable(AmiCenterGraphNode_Table t) {
+		this.sourceTables.add(t);
+	}
+
+	public void addSinkTable(AmiCenterGraphNode_Table t) {
+		this.sinkTables.add(t);
+	}
+
+	public short getTriggerType() {
+		return this.triggerType;
+	}
+
+	public void setTriggerType(short toSet) {
+		this.triggerType = toSet;
 	}
 
 }

@@ -26,6 +26,7 @@ import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.AmiWebCenterGraphManager;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerAddMethodPortlet;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerRichTableEditorPortlet;
+import com.f1.ami.web.centermanager.graph.AmiCenterManagerEntityRelationGraph;
 import com.f1.ami.web.centermanager.graph.AmiCenterManagerSmartGraph;
 import com.f1.ami.web.centermanager.graph.AmiCenterManagerSmartGraphMenu;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
@@ -91,6 +92,9 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 	//graph
 	private GraphPortlet graph;
 	private AmiCenterManagerSmartGraph smartGraph;
+	//add
+	private GraphPortlet erGraph;
+	private AmiCenterManagerEntityRelationGraph smartErGraph;
 
 	private AmiWebHeaderPortlet header;
 	private AmiWebCenterManagerHeaderPortlet amiHeader;
@@ -168,9 +172,15 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 		this.tree.setFormStyle(AmiWebUtils.getService(getManager()).getUserFormStyleManager());
 		this.tree.setDialogStyle(AmiWebUtils.getService(getManager()).getUserDialogStyleManager());
 
+		//add
+		this.erGraph = new GraphPortlet(generateConfig());
+		this.erGraph.addGraphListener(this);
+		this.smartErGraph = new AmiCenterManagerEntityRelationGraph(this, service, this.erGraph, allowModification);
+
 		this.graph = new GraphPortlet(generateConfig());
 		this.graph.addGraphListener(this);
 		this.smartGraph = new AmiCenterManagerSmartGraph(this, service, this.graph, allowModification);
+
 		DividerPortlet div = new DividerPortlet(generateConfig(), true);
 		div.setOffsetFromTopPx(300);
 
@@ -187,6 +197,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 
 		//add tab
 		this.tabPortlet = new TabPortlet(generateConfig());
+		this.tabPortlet.addChild("Entity Relation Graph", this.erGraph);
 		this.tabPortlet.addChild("Graph", this.graph);
 		this.tabPortlet.setIsCustomizable(false);
 		div.addChild(this.tabPortlet);

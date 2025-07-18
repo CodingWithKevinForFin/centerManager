@@ -215,10 +215,56 @@ public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, Ami
 				String tables = (String) correlationData;
 				String[] tableNames = null;
 				tableNames = SH.split(',', tables);
-				for (String name : tableNames) {
+				String triggerType = tableNames[0];
+				short triggerTypeCode = AmiCenterManagerUtils.centerObjectTypeToCode(AmiCenterGraphNode.TYPE_TRIGGER, triggerType);
+				n.setTriggerType(triggerTypeCode);
+				for (int i = 1; i < tableNames.length; i++) {
+					String name = tableNames[i];
 					AmiCenterGraphNode_Table owner = getOrCreateTable(name);
+					//deprecate these****
 					owner.bindTargetTrigger(nodeName, n);
 					n.setBindingTable(owner);
+					//********	
+				}
+
+				//add
+				switch (triggerTypeCode) {
+					//1 source, 1 sink
+					case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AGGREGATE:
+					case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_DECORATE:
+						AmiCenterGraphNode_Table source = getOrCreateTable(tableNames[1]);
+						AmiCenterGraphNode_Table sink = getOrCreateTable(tableNames[2]);
+						source.addSourceTrigger(n);
+						sink.addSinkTrigger(n);
+						n.addSourceTable(source);
+						n.addSinkTable(sink);
+						break;
+					//2 source, 1 sink
+					case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_JOIN:
+						AmiCenterGraphNode_Table left = getOrCreateTable(tableNames[1]);
+						AmiCenterGraphNode_Table right = getOrCreateTable(tableNames[2]);
+						AmiCenterGraphNode_Table target = getOrCreateTable(tableNames[3]);
+						left.addSourceTrigger(n);
+						right.addSourceTrigger(n);
+						target.addSinkTrigger(n);
+						n.addSourceTable(left);
+						n.addSourceTable(right);
+						n.addSinkTable(target);
+						break;
+					//multiple sources, 1 sink
+					case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_PROJECTION:
+						AmiCenterGraphNode_Table destin = getOrCreateTable(tableNames[tableNames.length - 1]);
+						destin.addSinkTrigger(n);
+						n.addSinkTable(destin);
+						for (int i = 1; i < tableNames.length - 1; i++) {
+							AmiCenterGraphNode_Table src = getOrCreateTable(tableNames[i]);
+							src.addSourceTrigger(n);
+							n.addSourceTable(src);
+						}
+						break;
+					case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_AMISCRIPT:
+					case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_RELAY:
+
 				}
 
 			}
