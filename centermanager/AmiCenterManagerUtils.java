@@ -11,7 +11,7 @@ import com.f1.ami.amicommon.AmiConsts;
 import com.f1.ami.amicommon.msg.AmiDatasourceColumn;
 import com.f1.ami.web.AmiWebFormPortletAmiScriptField;
 import com.f1.ami.web.AmiWebService;
-import com.f1.ami.web.graph.AmiCenterGraphNode;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
 import com.f1.base.Row;
 import com.f1.base.Table;
 import com.f1.suite.web.portal.PortletManager;

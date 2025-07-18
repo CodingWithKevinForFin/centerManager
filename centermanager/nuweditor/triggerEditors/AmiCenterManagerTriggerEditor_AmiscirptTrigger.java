@@ -305,7 +305,7 @@ public class AmiCenterManagerTriggerEditor_AmiscirptTrigger extends AmiCenterMan
 				Table t = tables.get(0);
 				JavaExpressionParser jep = new JavaExpressionParser();
 				BasicDerivedCellParser cp = new BasicDerivedCellParser(jep);
-				if (query.startsWith("SHOW METHODS")) {
+				if (query.startsWith("SHOW FULL METHODS")) {
 					for (Row r : t.getRows()) {
 						String methodName = (String) r.get("MethodName");
 						String definition = (String) r.get("Definition");
@@ -412,7 +412,7 @@ public class AmiCenterManagerTriggerEditor_AmiscirptTrigger extends AmiCenterMan
 	}
 
 	private void registerMethods() {
-		sendQueryToBackend("SHOW METHODS WHERE DefinedBy==\"USER\"");
+		sendQueryToBackend("SHOW FULL METHODS WHERE DefinedBy==\"USER\"");
 	}
 
 	@Override

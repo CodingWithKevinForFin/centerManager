@@ -2,7 +2,7 @@ package com.f1.ami.web.centermanager.editor;
 
 import java.util.Map;
 
-import com.f1.ami.web.graph.AmiCenterGraphNode;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.ConfirmDialog;
 import com.f1.suite.web.portal.impl.form.FormPortlet;

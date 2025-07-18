@@ -17,6 +17,7 @@ import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerAbstractTriggerEditor;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AggregateTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AmiscirptTrigger;
@@ -24,7 +25,6 @@ import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTri
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_JoinTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_ProjectionTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_RelayTrigger;
-import com.f1.ami.web.graph.AmiCenterGraphNode;
 import com.f1.base.Action;
 import com.f1.base.Row;
 import com.f1.base.Table;
@@ -41,7 +41,6 @@ import com.f1.suite.web.portal.impl.form.FormPortletSelectField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextAreaField;
 import com.f1.suite.web.portal.impl.form.FormPortletTextField;
 import com.f1.utils.CH;
-import com.f1.utils.OH;
 import com.f1.utils.SH;
 import com.f1.utils.string.sqlnode.AdminNode;
 
@@ -226,9 +225,7 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 			updateTriggerTemplate(type);
 		} else if (field == this.triggerOnField) {
 			onTriggerOnClauseChanged(field);
-		} else {
-			//other field changes go here
-			OH.assertTrue(!this.isAdd);
+		} else if (!this.isAdd) {
 			onFieldChanged(field);
 		}
 	}
