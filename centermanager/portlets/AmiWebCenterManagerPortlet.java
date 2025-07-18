@@ -662,6 +662,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 			}
 		}
 		this.smartGraph.buildGraph(origNodes, allSelected);
+		this.smartErGraph.buildGraph(origNodes, allSelected);
 		this.scriptTree.build(selected);
 	}
 
@@ -955,6 +956,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 		}
 		if (graphNeedsRebuild) {
 			smartGraph.rebuild();
+			smartErGraph.rebuild();
 			this.graphNeedsRebuild = false;
 		}
 	}

@@ -14,10 +14,10 @@ public class AmiCenterGraphNode_Table extends AmiCenterGraphAbstractNode {
 	private Map<String, AmiCenterGraphNode_Index> targetIndexes = new HashMap<String, AmiCenterGraphNode_Index>();
 
 	//(inbound)A sink trigger directs the data into the table. The arrow should point from the trigger to the table
-	private Set<AmiCenterGraphNode_Trigger> sinkTriggers = new HashSet<AmiCenterGraphNode_Trigger>();
+	private Set<AmiCenterGraphNode_Trigger> inboundTriggers = new HashSet<AmiCenterGraphNode_Trigger>();
 
 	//(outbound)A source trigger moves the data out of the table. The arrow should point from the table to the trigger
-	private Set<AmiCenterGraphNode_Trigger> sourceTriggers = new HashSet<AmiCenterGraphNode_Trigger>();
+	private Set<AmiCenterGraphNode_Trigger> outboundTriggers = new HashSet<AmiCenterGraphNode_Trigger>();
 
 	public AmiCenterGraphNode_Table(AmiWebCenterGraphManager manager, long uid, String label) {
 		super(manager, uid, label);
@@ -63,11 +63,20 @@ public class AmiCenterGraphNode_Table extends AmiCenterGraphAbstractNode {
 		return !this.targetTriggers.isEmpty();
 	}
 
-	public void addSourceTrigger(AmiCenterGraphNode_Trigger source) {
-		this.sourceTriggers.add(source);
+	//add
+	public void addOutboundTrigger(AmiCenterGraphNode_Trigger source) {
+		this.outboundTriggers.add(source);
 	}
 
-	public void addSinkTrigger(AmiCenterGraphNode_Trigger sink) {
-		this.sinkTriggers.add(sink);
+	public void addInboundTrigger(AmiCenterGraphNode_Trigger sink) {
+		this.inboundTriggers.add(sink);
+	}
+
+	public Set<AmiCenterGraphNode_Trigger> getOutboundTriggers() {
+		return this.outboundTriggers;
+	}
+
+	public Set<AmiCenterGraphNode_Trigger> getInboundTriggers() {
+		return this.inboundTriggers;
 	}
 }

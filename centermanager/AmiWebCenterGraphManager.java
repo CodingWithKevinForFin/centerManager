@@ -234,8 +234,8 @@ public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, Ami
 					case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_DECORATE:
 						AmiCenterGraphNode_Table source = getOrCreateTable(tableNames[1]);
 						AmiCenterGraphNode_Table sink = getOrCreateTable(tableNames[2]);
-						source.addSourceTrigger(n);
-						sink.addSinkTrigger(n);
+						source.addOutboundTrigger(n);
+						sink.addInboundTrigger(n);
 						n.addSourceTable(source);
 						n.addSinkTable(sink);
 						break;
@@ -244,9 +244,9 @@ public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, Ami
 						AmiCenterGraphNode_Table left = getOrCreateTable(tableNames[1]);
 						AmiCenterGraphNode_Table right = getOrCreateTable(tableNames[2]);
 						AmiCenterGraphNode_Table target = getOrCreateTable(tableNames[3]);
-						left.addSourceTrigger(n);
-						right.addSourceTrigger(n);
-						target.addSinkTrigger(n);
+						left.addOutboundTrigger(n);
+						right.addOutboundTrigger(n);
+						target.addInboundTrigger(n);
 						n.addSourceTable(left);
 						n.addSourceTable(right);
 						n.addSinkTable(target);
@@ -254,11 +254,11 @@ public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, Ami
 					//multiple sources, 1 sink
 					case AmiCenterEntityConsts.TRIGGER_TYPE_CODE_PROJECTION:
 						AmiCenterGraphNode_Table destin = getOrCreateTable(tableNames[tableNames.length - 1]);
-						destin.addSinkTrigger(n);
+						destin.addInboundTrigger(n);
 						n.addSinkTable(destin);
 						for (int i = 1; i < tableNames.length - 1; i++) {
 							AmiCenterGraphNode_Table src = getOrCreateTable(tableNames[i]);
-							src.addSourceTrigger(n);
+							src.addOutboundTrigger(n);
 							n.addSourceTable(src);
 						}
 						break;

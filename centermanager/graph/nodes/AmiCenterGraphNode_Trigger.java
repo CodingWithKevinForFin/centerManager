@@ -46,6 +46,14 @@ public class AmiCenterGraphNode_Trigger extends AmiCenterGraphAbstractNode {
 		this.sinkTables.add(t);
 	}
 
+	public Set<AmiCenterGraphNode_Table> getSourceTables() {
+		return this.sourceTables;
+	}
+
+	public Set<AmiCenterGraphNode_Table> getSinkTables() {
+		return this.sinkTables;
+	}
+
 	public short getTriggerType() {
 		return this.triggerType;
 	}
