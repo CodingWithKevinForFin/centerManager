@@ -12,6 +12,7 @@ public class AmiCenterGraphNode_Table extends AmiCenterGraphAbstractNode {
 
 	private Map<String, AmiCenterGraphNode_Trigger> targetTriggers = new HashMap<String, AmiCenterGraphNode_Trigger>();
 	private Map<String, AmiCenterGraphNode_Index> targetIndexes = new HashMap<String, AmiCenterGraphNode_Index>();
+	private boolean isPrimary = false;
 
 	//(inbound)A sink trigger directs the data into the table. The arrow should point from the trigger to the table
 	private Set<AmiCenterGraphNode_Trigger> inboundTriggers = new HashSet<AmiCenterGraphNode_Trigger>();
@@ -78,5 +79,13 @@ public class AmiCenterGraphNode_Table extends AmiCenterGraphAbstractNode {
 
 	public Set<AmiCenterGraphNode_Trigger> getInboundTriggers() {
 		return this.inboundTriggers;
+	}
+
+	public boolean isPrimaryNode() {
+		return this.isPrimary;
+	}
+
+	public void setPrimaryNode(boolean isPrimary) {
+		this.isPrimary = isPrimary;
 	}
 }

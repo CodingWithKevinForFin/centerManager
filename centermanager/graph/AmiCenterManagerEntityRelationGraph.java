@@ -10,12 +10,8 @@ import java.util.List;
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.centermanager.AmiWebCenterGraphManager;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
-import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Dbo;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Index;
-import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Method;
-import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Procedure;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Table;
-import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Timer;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Trigger;
 import com.f1.ami.web.centermanager.portlets.AmiWebCenterManagerPortlet;
 import com.f1.ami.web.graph.AmiWebGraphNode_Link;
@@ -32,6 +28,7 @@ import com.f1.utils.OH;
 import com.f1.utils.concurrent.IdentityHashSet;
 import com.f1.utils.structs.LongKeyMap;
 
+//this class only shows relationship between tables and triggers
 public class AmiCenterManagerEntityRelationGraph implements GraphListener, GraphContextMenuFactory, WebMenuListener {
 	private static final String STYLE_TABLE = "_cna=graph_node_table";//"_cna=graph_node_rt_chartpanel";//"_cna=graph_node_table";
 	private static final String STYLE_TRIGGER = "_cna=graph_node_trigger";
@@ -48,6 +45,8 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 	private static final int Y_SPACING = 120;
 	private static final int NODE_WIDTH = 100;
 	private static final int NODE_HEIGHT = 60;
+
+	public static final int MAX_GRAPH_DEPTH = 4;
 
 	private GraphPortlet erGraph;
 	private AmiWebService service;
@@ -102,6 +101,13 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 
 	public void rebuild() {
 		IdentityHashMap<AmiCenterGraphNode, Byte> allNodes = new IdentityHashMap<AmiCenterGraphNode, Byte>();
+		boolean isOneNodeSelected = this.origNodes.size() == 1;
+		boolean isOneNodeTrigger = isOneNodeSelected && this.origNodes.iterator().next() instanceof AmiCenterGraphNode_Trigger;
+		boolean isOneNodeTable = isOneNodeSelected && this.origNodes.iterator().next() instanceof AmiCenterGraphNode_Table;
+		if (isOneNodeTable) {
+			((AmiCenterGraphNode_Table) this.origNodes.iterator().next()).setPrimaryNode(true);
+		}
+
 		for (AmiCenterGraphNode i : this.origNodes)
 			walkNodes(i, allNodes, (byte) (WALK_INBOUND_TRIGGER | WALK_OUTBOUND_TRIGGER | WALK_INBOUND_TRIGGER_SOURCE | WALK_INBOUND_TRIGGER_TARGET | WALK_OUTBOUND_TRIGGER_SOURCE
 					| WALK_OUTBOUND_TRIGGER_TARGET));
@@ -116,35 +122,21 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 		for (AmiCenterGraphNode i : this.allNodes.values())
 			this.remaining.add(i);
 
-		//TODO:REMOVE this.remaining? remaining should be identical to this.allNodes
 		int depth = 0;
 
 		List<AmiCenterGraphNode_Table> tables = new ArrayList<AmiCenterGraphNode_Table>();
 		List<AmiCenterGraphNode_Trigger> triggers = new ArrayList<AmiCenterGraphNode_Trigger>();
-		List<AmiCenterGraphNode_Index> indexes = new ArrayList<AmiCenterGraphNode_Index>();
+		//First determine the depth for the origNodes
 
-		List<AmiCenterGraphNode_Procedure> procedures = new ArrayList<AmiCenterGraphNode_Procedure>();
-		List<AmiCenterGraphNode_Timer> timers = new ArrayList<AmiCenterGraphNode_Timer>();
-		List<AmiCenterGraphNode_Dbo> dbos = new ArrayList<AmiCenterGraphNode_Dbo>();
-		List<AmiCenterGraphNode_Method> methods = new ArrayList<AmiCenterGraphNode_Method>();
-
+		int primaryNodeDepth = determineDepth(this.origNodes.iterator().next());
 		for (AmiCenterGraphNode i : this.allNodes.values()) {
 			depth = Math.max(depth, determineDepth(i));
 			if (i.getType() == AmiCenterGraphNode.TYPE_TABLE)
 				tables.add((AmiCenterGraphNode_Table) i);
 			else if (i.getType() == AmiCenterGraphNode.TYPE_TRIGGER)
 				triggers.add((AmiCenterGraphNode_Trigger) i);
-			else if (i.getType() == AmiCenterGraphNode.TYPE_INDEX)
-				indexes.add((AmiCenterGraphNode_Index) i);
-			else if (i.getType() == AmiCenterGraphNode.TYPE_PROCEDURE)
-				procedures.add((AmiCenterGraphNode_Procedure) i);
-			else if (i.getType() == AmiCenterGraphNode.TYPE_TIMER)
-				timers.add((AmiCenterGraphNode_Timer) i);
-			else if (i.getType() == AmiCenterGraphNode.TYPE_METHOD)
-				methods.add((AmiCenterGraphNode_Method) i);
-			else if (i.getType() == AmiCenterGraphNode.TYPE_DBO)
-				dbos.add((AmiCenterGraphNode_Dbo) i);
 		}
+		System.out.println(this.depths);
 
 		this.maxDepth = depth;
 		minXPos = new int[depth + 1];
@@ -155,6 +147,10 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 			Node node = addNode(0, i);
 			if (node == null)
 				continue;
+			List<Node> childs = new ArrayList<Node>();
+			for (AmiCenterGraphNode_Trigger j : sort(i.getOutboundTriggers()))
+				CH.addSkipNull(childs, addToGraph(getX(node), j));
+			center(node, childs);
 		}
 
 		//then for tables without indexes or triggers
@@ -187,15 +183,48 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 		}
 	}
 
+	private int getX(Node node) {
+		return node.getX() - LEFT_PADDING;
+	}
+
+	//responsible for adding the trigger's tables to the graph
+	private Node addToGraph(int minx, AmiCenterGraphNode_Trigger trigger) {
+		Node node = addNode(minx, trigger);
+		if (node == null)
+			return null;
+		minx = getX(node);
+		List<Node> srcChilds = new ArrayList<Node>();
+		//		for (AmiCenterGraphNode_Table j : trigger.getSinkTables())
+		//			CH.addSkipNull(srcChilds, addToGraph(minx, j));
+		center(node, srcChilds);
+		return node;
+	}
+
+	private void center(Node node, List<Node> childs) {
+		if (childs.isEmpty())
+			return;
+		int min = getX(childs.get(0));
+		int max = min;
+		for (int i = 1; i < childs.size(); i++) {
+			int t = getX(childs.get(i));
+			min = Math.min(min, t);
+			max = Math.max(max, t);
+		}
+		int mid = (max + min) / 2;
+		if (mid > getX(node)) {
+			AmiCenterGraphNode n = (AmiCenterGraphNode) node.getData();
+			node.setX(LEFT_PADDING + mid);
+			minXPos[depths.get(n.getUid())] = getX(node) + X_SPACING;
+		}
+
+	}
+
 	private Node addNode(int minx, AmiCenterGraphNode i) {
 		if (!this.remaining.remove(i))
 			return null;
 		int y = depths.get(i.getUid());
 		String style;
 		String name = i.getLabel();
-		//String description = i.getDescription();
-		//		if (SH.is(description))
-		//			name = name + "<BR>(" + description + ")";
 		switch (i.getType()) {
 			case AmiCenterGraphNode.TYPE_TABLE:
 				style = STYLE_TABLE;
@@ -226,9 +255,6 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 			default:
 				style = "";
 		}
-		//TODO:ADD undefined icon 
-		//		if (i.getInner() == null && i.getType() != AmiWebGraphNode.TYPE_FEED)
-		//			name += "<BR><span style='background:red;color:white;pointer-events:none'>Not Defined</span>";
 		int x = Math.max(minx, minXPos[y]);
 		minXPos[y] = x + X_SPACING;
 		Node node = this.erGraph.addNode(LEFT_PADDING + x, TOP_PADDING + (this.maxDepth - y) * Y_SPACING, NODE_WIDTH, NODE_HEIGHT, name, style);
@@ -254,22 +280,47 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 		edge.setDirection(GraphPortlet.DIRECTION_FORWARD);
 	}
 
-	//NOT SURE how walkNodes() and determineDepth() works, TODO: 
 	private int determineDepth(AmiCenterGraphNode i) {
-		Integer r = null;
+		Integer r = depths.get(i.getUid());
 		if (r == null) {
 			switch (i.getType()) {
-				case AmiCenterGraphNode.TYPE_INDEX:
-					r = 0;
-					break;
 				case AmiCenterGraphNode.TYPE_TRIGGER:
 					r = 2;
 					break;
 				case AmiCenterGraphNode.TYPE_TABLE:
-					r = 1;
+					AmiCenterGraphNode_Table t = (AmiCenterGraphNode_Table) i;
+					if (t.isPrimaryNode()) {
+						boolean hasOutbound = !t.getOutboundTriggers().isEmpty();
+						boolean hasInbound = !t.getInboundTriggers().isEmpty();
+						//first check inbound trigger
+						if (hasInbound) {
+							r = 2;
+							for (AmiCenterGraphNode_Trigger tr : t.getInboundTriggers()) {
+								depths.put(tr.getUid(), 1);
+								for (AmiCenterGraphNode_Table tt : tr.getSourceTables()) {
+									depths.put(tt.getUid(), 0);
+								}
+							}
+							if (hasOutbound) {
+								for (AmiCenterGraphNode_Trigger tr : t.getOutboundTriggers()) {
+									depths.put(tr.getUid(), 3);
+									for (AmiCenterGraphNode_Table tt : tr.getSinkTables()) {
+										depths.put(tt.getUid(), 4);
+									}
+									for (AmiCenterGraphNode_Table tt : tr.getSourceTables()) {
+										if (tt == i)
+											continue;
+										depths.put(tt.getUid(), 2);
+									}
+								}
+							}
+						} else {//if no inbound trigger, table is sitting at the bottom
+							r = 0;
+						}
+					}
 					break;
-				default://all other standalone objects will have depth of 0(timer,procedure,method,dbo)
-					r = 0;
+				default:
+					r = -1;
 			}
 			depths.put(i.getUid(), r);
 		}
@@ -310,8 +361,8 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 					for (AmiCenterGraphNode_Trigger triggerNode : tableNode.getInboundTriggers())
 						walkNodes(triggerNode, nodes, (byte) (WALK_INBOUND_TRIGGER_SOURCE | WALK_INBOUND_TRIGGER_TARGET));
 				}
-				if (walkInboundTriggerSource || walkInboundTriggerTarget || walkOutboundTriggerSource || walkOutboundTriggerTarget)
-					System.out.println("Will only walk up to trigger source/target tables");
+				//				if (walkInboundTriggerSource || walkInboundTriggerTarget || walkOutboundTriggerSource || walkOutboundTriggerTarget)
+				//					System.out.println("Will only walk up to trigger source/target tables");
 				style = STYLE_TABLE;
 				break;
 			case AmiCenterGraphNode.TYPE_TRIGGER: {

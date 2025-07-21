@@ -54,6 +54,10 @@ public class AmiCenterGraphNode_Trigger extends AmiCenterGraphAbstractNode {
 		return this.sinkTables;
 	}
 
+	public AmiCenterGraphNode_Table getSingletonSinkTable() {
+		return this.sinkTables.iterator().next();
+	}
+
 	public short getTriggerType() {
 		return this.triggerType;
 	}
