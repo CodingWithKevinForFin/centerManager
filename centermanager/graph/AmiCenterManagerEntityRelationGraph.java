@@ -5,12 +5,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import com.f1.ami.web.AmiWebService;
+import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiWebCenterGraphManager;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
-import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Index;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Table;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Trigger;
 import com.f1.ami.web.centermanager.portlets.AmiWebCenterManagerPortlet;
@@ -98,20 +100,38 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 		this.toSelect.addAll(toSelect);
 		this.owner.onGraphNeedsRebuild();
 	}
-
+	/* General Rules: <br>
+	 * Rule0: Only table and trigger nodes will be considered in the graph. <br>
+	 * Rule1: If only one table node is selected, graph will only be built up to the depth of 4(max 4) <br>
+	 * Rule2: If multiple table/trigger nodes are selected, the graph will be built/merged based on these tables/triggers<br>
+	 * 
+	 * Linking Rules: <br>
+	 * Rule0: For join trigger, left table will point to right table
+	 */
 	public void rebuild() {
 		IdentityHashMap<AmiCenterGraphNode, Byte> allNodes = new IdentityHashMap<AmiCenterGraphNode, Byte>();
+		List<AmiCenterGraphNode_Table> origTables = new ArrayList<AmiCenterGraphNode_Table>();
+		for (AmiCenterGraphNode n : this.origNodes) {
+			if (n instanceof AmiCenterGraphNode_Table) {
+				AmiCenterGraphNode_Table table = (AmiCenterGraphNode_Table) n;
+				table.setPrimaryNode(true);
+				origTables.add(table);
+			}
+		}
+
 		boolean isOneNodeSelected = this.origNodes.size() == 1;
 		boolean isOneNodeTrigger = isOneNodeSelected && this.origNodes.iterator().next() instanceof AmiCenterGraphNode_Trigger;
 		boolean isOneNodeTable = isOneNodeSelected && this.origNodes.iterator().next() instanceof AmiCenterGraphNode_Table;
+		AmiCenterGraphNode_Table primaryTable = null;
 		if (isOneNodeTable) {
-			((AmiCenterGraphNode_Table) this.origNodes.iterator().next()).setPrimaryNode(true);
+			primaryTable = ((AmiCenterGraphNode_Table) this.origNodes.iterator().next());
+			primaryTable.setPrimaryNode(true);
 		}
 
 		for (AmiCenterGraphNode i : this.origNodes)
 			walkNodes(i, allNodes, (byte) (WALK_INBOUND_TRIGGER | WALK_OUTBOUND_TRIGGER | WALK_INBOUND_TRIGGER_SOURCE | WALK_INBOUND_TRIGGER_TARGET | WALK_OUTBOUND_TRIGGER_SOURCE
 					| WALK_OUTBOUND_TRIGGER_TARGET));
-		System.out.println(allNodes);
+
 		this.allNodes.clear();
 		for (AmiCenterGraphNode i : allNodes.keySet())
 			this.allNodes.put(i.getUid(), i);
@@ -136,7 +156,6 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 			else if (i.getType() == AmiCenterGraphNode.TYPE_TRIGGER)
 				triggers.add((AmiCenterGraphNode_Trigger) i);
 		}
-		System.out.println(this.depths);
 
 		this.maxDepth = depth;
 		minXPos = new int[depth + 1];
@@ -159,28 +178,72 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 		}
 
 		//build links
-		for (AmiCenterGraphNode i : allNodes.keySet()) {
-			Node sourceNode = graphNodes.get(i.getUid());
-			switch (i.getType()) {
-				case AmiCenterGraphNode.TYPE_TABLE:
-					AmiCenterGraphNode_Table t = (AmiCenterGraphNode_Table) i;
-					//build links for triggers
-					for (AmiCenterGraphNode_Trigger j : t.getTargetTriggers().values()) {
-						Node targetNode = graphNodes.get(j.getUid());
-						if (targetNode != null) {
-							addDataEdge(sourceNode, targetNode);
-						}
-					}
-					//build links for indexes
-					for (AmiCenterGraphNode_Index j : t.getTargetIndexes().values()) {
-						Node targetNode = graphNodes.get(j.getUid());
-						if (targetNode != null) {
-							addDataEdge(sourceNode, targetNode);
-						}
-					}
-					break;
+		//		for (AmiCenterGraphNode i : allNodes.keySet()) {
+		//			Node sourceNode = graphNodes.get(i.getUid());
+		//			switch (i.getType()) {
+		//				case AmiCenterGraphNode.TYPE_TABLE:
+		//					AmiCenterGraphNode_Table t = (AmiCenterGraphNode_Table) i;
+		//					//build links for triggers
+		//					for (AmiCenterGraphNode_Trigger j : t.getTargetTriggers().values()) {
+		//						Node targetNode = graphNodes.get(j.getUid());
+		//						if (targetNode != null) {
+		//							addDataEdge(sourceNode, targetNode);
+		//						}
+		//					}
+		//					//build links for indexes
+		//					for (AmiCenterGraphNode_Index j : t.getTargetIndexes().values()) {
+		//						Node targetNode = graphNodes.get(j.getUid());
+		//						if (targetNode != null) {
+		//							addDataEdge(sourceNode, targetNode);
+		//						}
+		//					}
+		//					break;
+		//			}
+		//		}
+
+		//build links, start with primary tables
+		//		for(AmiCenterGraphNode_Table primaryTable: origTables) {
+		//			
+		//		}
+
+		//start with inbound
+		for (AmiCenterGraphNode_Trigger inboundTrigger : primaryTable.getInboundTriggers()) {
+			Node sourceTrigger = graphNodes.get(inboundTrigger.getUid());
+			Node targetTable = graphNodes.get(primaryTable.getUid());
+			addDataEdge(sourceTrigger, targetTable);
+			if (inboundTrigger.getTriggerType() == AmiCenterEntityConsts.TRIGGER_TYPE_CODE_JOIN)
+				addSourceTableLinkForJoinTrigger(inboundTrigger);
+			for (AmiCenterGraphNode_Table t : inboundTrigger.getSourceTables()) {
+				Node sourceTableNode = graphNodes.get(t.getUid());
+				addDataEdge(sourceTableNode, sourceTrigger);
 			}
 		}
+
+		//then do outbound
+		for (AmiCenterGraphNode_Trigger outboundTrigger : primaryTable.getOutboundTriggers()) {
+			Node sourceTable = graphNodes.get(primaryTable.getUid());
+			Node targetTrigger = graphNodes.get(outboundTrigger.getUid());
+			addDataEdge(sourceTable, targetTrigger);
+			if (outboundTrigger.getTriggerType() == AmiCenterEntityConsts.TRIGGER_TYPE_CODE_JOIN)
+				addSourceTableLinkForJoinTrigger(outboundTrigger);
+			for (AmiCenterGraphNode_Table t : outboundTrigger.getSinkTables()) {
+				Node sourceTriggerNode = graphNodes.get(outboundTrigger.getUid());
+				Node targetTable = graphNodes.get(t.getUid());
+				addDataEdge(sourceTriggerNode, targetTable);
+			}
+		}
+
+	}
+
+	public void addSourceTableLinkForJoinTrigger(AmiCenterGraphNode_Trigger node) {
+		Set<AmiCenterGraphNode_Table> srcs = node.getSourceTables();
+		Iterator<AmiCenterGraphNode_Table> i = srcs.iterator();
+		AmiCenterGraphNode_Table left = i.next();
+		AmiCenterGraphNode_Table right = i.next();
+		Node sourceNode = graphNodes.get(left.getUid());
+		Node targetNode = graphNodes.get(right.getUid());
+		addDataEdge(sourceNode, targetNode);
+
 	}
 
 	private int getX(Node node) {
