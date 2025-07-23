@@ -253,14 +253,19 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 
 		//3.determine depth
 		for (Set<AmiCenterGraphNode> groupNode : mergedGroupSets) {
+			//set once per groupNode
 			referenceDepthSet = false;
 			for (AmiCenterGraphNode i : groupNode) {
-				determineDepth(i, groupNode);
+				determineDepth(i, null, groupNode);
+				this.allNodes.put(i.getUid(), i);
+				this.remaining.add(i);
+				addNode(0, i);
 			}
+
 		}
 
 		normalizeDepth();
-		Integer[] normalizedDepths = depths.getValues(new Integer[0]);
+		Integer[] normalizedDepths = depths.getValues(new Integer[depths.size()]);
 		Integer maxDepth = Collections.max(Arrays.asList(normalizedDepths));
 		this.maxDepth = maxDepth;
 		minXPos = new int[maxDepth + 1];
@@ -377,7 +382,7 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 
 	//normalize depths to 0->max
 	private void normalizeDepth() {
-		Integer[] unnormalizedDepths = depths.getValues(new Integer[0]);
+		Integer[] unnormalizedDepths = depths.getValues(new Integer[depths.size()]);
 		Integer minDepth = Collections.min(Arrays.asList(unnormalizedDepths));
 		Integer maxDepth = Collections.max(Arrays.asList(unnormalizedDepths));
 		int diff = 0 - minDepth;
@@ -387,24 +392,30 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 		}
 	}
 
-	private int determineDepth(AmiCenterGraphNode i, Set<AmiCenterGraphNode> visibleNodes) {
+	private int determineDepth(AmiCenterGraphNode i, Integer depthToSet, Set<AmiCenterGraphNode> visibleNodes) {
 		Integer r = depths.get(i.getUid());
 		if (r == null) {
 			switch (i.getType()) {
 				case AmiCenterGraphNode.TYPE_TRIGGER:
+					//determine own depth
 					if (!referenceDepthSet) {//init the depth to 0(reference)
 						referenceDepthSet = true;
 						depths.put(i.getUid(), 0);
+					} else {
+						OH.assertNotNull(depthToSet);
+						depths.put(i.getUid(), depthToSet);
 					}
+
+					//determine child depth
 					AmiCenterGraphNode_Trigger j = (AmiCenterGraphNode_Trigger) i;
 					boolean hasSourceTable = !j.getSourceTables().isEmpty();
 					boolean hasSinkTable = !j.getSinkTables().isEmpty();
 					if (hasSourceTable) {
-						//curDepth - 1
+						//ownDepth - 1
 						int sourceTableLevel = depths.get(i.getUid()) - 1;
 						for (AmiCenterGraphNode_Table tt : j.getSourceTables()) {
 							if (visibleNodes.contains(tt) && depths.get(tt.getUid()) == null) {
-								depths.put(tt.getUid(), sourceTableLevel);
+								determineDepth(tt, sourceTableLevel, visibleNodes);
 							}
 						}
 					}
@@ -413,7 +424,7 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 						int sinkTableLevel = depths.get(i.getUid()) + 1;
 						for (AmiCenterGraphNode_Table tt : j.getSinkTables()) {
 							if (visibleNodes.contains(tt) && depths.get(tt.getUid()) == null) {
-								depths.put(tt.getUid(), sinkTableLevel);
+								determineDepth(tt, sinkTableLevel, visibleNodes);
 							}
 						}
 					}
@@ -422,6 +433,9 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 					if (!referenceDepthSet) {//init the depth to 0(reference)
 						referenceDepthSet = true;
 						depths.put(i.getUid(), 0);
+					} else {
+						OH.assertNotNull(depthToSet);
+						depths.put(i.getUid(), depthToSet);
 					}
 					AmiCenterGraphNode_Table t = (AmiCenterGraphNode_Table) i;
 					boolean hasOutbound = !t.getOutboundTriggers().isEmpty();
@@ -432,10 +446,12 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 						int inboundTriggerLevel = depths.get(i.getUid()) - 1;
 						for (AmiCenterGraphNode_Trigger tr : t.getInboundTriggers()) {
 							if (visibleNodes.contains(tr) && depths.get(tr.getUid()) == null) {
-								depths.put(tr.getUid(), inboundTriggerLevel);
+								//								depths.put(tr.getUid(), inboundTriggerLevel);
+								determineDepth(tr, inboundTriggerLevel, visibleNodes);
 								for (AmiCenterGraphNode_Table tt : tr.getSourceTables()) {
 									if (visibleNodes.contains(tt) && depths.get(tt.getUid()) == null)
-										depths.put(tt.getUid(), inboundTriggerLevel - 1);
+										//depths.put(tt.getUid(), inboundTriggerLevel - 1);
+										determineDepth(tt, inboundTriggerLevel - 1, visibleNodes);
 								}
 							}
 						}
@@ -445,16 +461,22 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 						int outboundTriggerLevel = depths.get(i.getUid()) + 1;
 						for (AmiCenterGraphNode_Trigger tr : t.getOutboundTriggers()) {
 							if (visibleNodes.contains(tr) && depths.get(tr.getUid()) == null) {
-								depths.put(tr.getUid(), outboundTriggerLevel);
+								//depths.put(tr.getUid(), outboundTriggerLevel);
+								determineDepth(tr, outboundTriggerLevel, visibleNodes);
 								for (AmiCenterGraphNode_Table tt : tr.getSinkTables()) {
-									if (visibleNodes.contains(tt) && depths.get(tt.getUid()) == null)
-										depths.put(tt.getUid(), outboundTriggerLevel + 1);
+									if (visibleNodes.contains(tt) && depths.get(tt.getUid()) == null) {
+										//depths.put(tt.getUid(), outboundTriggerLevel + 1);
+										determineDepth(tt, outboundTriggerLevel + 1, visibleNodes);
+									}
 								}
 								for (AmiCenterGraphNode_Table tt : tr.getSourceTables()) {
 									if (tt == i)
 										continue;
-									if (visibleNodes.contains(tt) && depths.get(tt.getUid()) == null)
-										depths.put(tt.getUid(), depths.get(i.getUid()));
+									if (visibleNodes.contains(tt) && depths.get(tt.getUid()) == null) {
+										//depths.put(tt.getUid(), depths.get(i.getUid()));
+										determineDepth(tt, depthToSet, visibleNodes);
+
+									}
 								}
 							}
 
