@@ -35,6 +35,7 @@ import com.f1.suite.web.portal.impl.visual.GraphPortlet.Node;
 import com.f1.utils.CH;
 import com.f1.utils.MH;
 import com.f1.utils.OH;
+import com.f1.utils.SH;
 import com.f1.utils.concurrent.IdentityHashSet;
 import com.f1.utils.structs.LongKeyMap;
 
@@ -646,10 +647,20 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 			nodes.add((AmiCenterGraphNode) i.getData());
 		if ("navigate".equals(id)) {
 			this.buildGraph(new IdentityHashSet<AmiCenterGraphNode>(nodes), new IdentityHashSet<AmiCenterGraphNode>(nodes));
+		} else if (SH.startsWith(id, "add")) {
+			AmiCenterManagerSmartGraphMenu.onMenuItemAddAction(service, id);
 		} else if ("edit_table".equals(id)) {
-
+			owner.onContextMenuOnNodes(id, nodes);
 		} else if ("edit_trigger".equals(id)) {
-			System.out.println(2);
+			owner.onContextMenuOnNodes(id, nodes);
+		} else if ("edit_procedure".equals(id)) {
+			owner.onContextMenuOnNodes(id, nodes);
+		} else if ("edit_timer".equals(id)) {
+			owner.onContextMenuOnNodes(id, nodes);
+		} else if ("edit_index".equals(id)) {
+			owner.onContextMenuOnNodes(id, nodes);
+		} else if ("edit_dbo".equals(id)) {
+			owner.onContextMenuOnNodes(id, nodes);
 		}
 
 	}

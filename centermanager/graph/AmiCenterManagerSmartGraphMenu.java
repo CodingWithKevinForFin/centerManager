@@ -22,7 +22,6 @@ import com.f1.suite.web.portal.PortletManager;
 import com.f1.suite.web.portal.impl.ConfirmDialog;
 import com.f1.suite.web.portal.impl.ConfirmDialogListener;
 import com.f1.suite.web.portal.impl.ConfirmDialogPortlet;
-import com.f1.utils.CH;
 
 public class AmiCenterManagerSmartGraphMenu {
 
@@ -114,8 +113,7 @@ public class AmiCenterManagerSmartGraphMenu {
 	}
 
 	//manages all the add_xxx action because it doesn't need to enage with the backend
-	static public void onMenuItem(AmiWebService service, String id, List<AmiCenterGraphNode> nodes) {
-		AmiCenterGraphNode first = CH.first(nodes);
+	static public void onMenuItemAddAction(AmiWebService service, String id) {
 		PortletManager manager = service.getPortletManager();
 		if ("add_table".equals(id)) {
 			manager.showDialog("Add Table", new AmiCenterManagerAddTablePortlet(manager.generateConfig()), 500, 550);

@@ -512,6 +512,117 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 		return false;
 	}
 
+	public void onContextMenuOnNodes(String action, List<AmiCenterGraphNode> nodes) {
+		if ("edit_trigger".equals(action)) {
+			AmiCenterGraphNode n = nodes.get(0);
+			String query = "DESCRIBE TRIGGER " + n.getLabel();
+			//String query = "SHOW FULL TRIGGERS";// WHERE TriggerName==\"" + n.getLabel() + "\"";
+			prepareRequestToBackend(query);
+		} else if ("delete_trigger".equals(action)) {
+			String query = "DROP TRIGGER ";
+			if (nodes.size() == 1)
+				query += nodes.get(0).getLabel();
+			else {
+				List<String> triggerNames = new ArrayList<String>();
+				for (AmiCenterGraphNode tn : nodes)
+					triggerNames.add(tn.getLabel());
+				query += SH.join(",", triggerNames);
+			}
+			prepareRequestToBackend(query);
+		} else if ("edit_timer".equals(action)) {
+			AmiCenterGraphNode n = nodes.get(0);
+			String query = "DESCRIBE TIMER " + n.getLabel();
+			prepareRequestToBackend(query);
+		} else if ("delete_timer".equals(action)) {
+			String query = "DROP TIMER ";
+			if (nodes.size() == 1)
+				query += nodes.get(0).getLabel();
+			else {
+				List<String> timerNames = new ArrayList<String>();
+				for (AmiCenterGraphNode tn : nodes)
+					timerNames.add(tn.getLabel());
+				query += SH.join(",", timerNames);
+			}
+			prepareRequestToBackend(query);
+		} else if ("edit_procedure".equals(action)) {
+			AmiCenterGraphNode n = nodes.get(0);
+			String query = "DESCRIBE PROCEDURE " + n.getLabel();
+			prepareRequestToBackend(query);
+		} else if ("delete_procedure".equals(action)) {
+			String query = "DROP PROCEDURE ";
+			if (nodes.size() == 1)
+				query += nodes.get(0).getLabel();
+			else {
+				List<String> timerNames = new ArrayList<String>();
+				for (AmiCenterGraphNode tn : nodes)
+					timerNames.add(tn.getLabel());
+				query += SH.join(",", timerNames);
+			}
+			prepareRequestToBackend(query);
+		} else if ("edit_method".equals(action)) {
+			AmiCenterGraphNode n = nodes.get(0);
+			if (n.isReadonly()) {
+				AmiCenterManagerUtils.popDialog(service, "CANNOT edit a read-only object", "EDIT FAIL");
+				return;
+			}
+			String query = "DESCRIBE METHOD " + n.getLabel();
+			prepareRequestToBackend(query);
+		} else if ("delete_method".equals(action)) {
+			String query = "DROP METHOD ";
+			if (nodes.size() == 1)
+				query += nodes.get(0).getLabel();
+			else {
+				List<String> timerNames = new ArrayList<String>();
+				for (AmiCenterGraphNode tn : nodes)
+					timerNames.add(tn.getLabel());
+				query += SH.join(",", timerNames);
+			}
+			prepareRequestToBackend(query);
+		} else if ("edit_table".equals(action)) {
+			AmiCenterGraphNode n = nodes.get(0);
+			if (n.isReadonly()) {
+				AmiCenterManagerUtils.popDialog(service, "CANNOT edit a read-only object", "EDIT FAIL");
+				return;
+			}
+			String query = "DESCRIBE TABLE " + n.getLabel();
+			//String query = "SHOW FULL TABLES WHERE TableName==\"" + n.getLabel() + "\"";
+			prepareRequestToBackend(query);
+		} else if ("delete_table".equals(action)) {
+			String query = "DROP TABLE ";
+			if (nodes.size() == 1)
+				query += nodes.get(0).getLabel();
+			else {
+				List<String> timerNames = new ArrayList<String>();
+				for (AmiCenterGraphNode tn : nodes)
+					timerNames.add(tn.getLabel());
+				query += SH.join(",", timerNames);
+			}
+			prepareRequestToBackend(query);
+		} else if ("edit_index".equals(action)) {
+			AmiCenterGraphNode n = nodes.get(0);
+			String[] tableNamePlusIndexName = n.getLabel().split("::");
+			if (n.isReadonly()) {
+				AmiCenterManagerUtils.popDialog(service, "CANNOT edit a read-only object", "EDIT FAIL");
+				return;
+			}
+			String query = "DESCRIBE INDEX " + tableNamePlusIndexName[1] + " ON " + tableNamePlusIndexName[0];
+			prepareRequestToBackend(query);
+		} else if ("delete_index".equals(action)) {
+			StringBuilder query = new StringBuilder();
+			query.append("DROP INDEX ");
+			if (nodes.size() == 1) {
+				String label = nodes.get(0).getLabel();
+				String[] tableNamePlusIndexName = label.split("::");
+				query.append(tableNamePlusIndexName[1]).append(" ");
+				query.append("ON").append(" ").append(tableNamePlusIndexName[0]);
+				prepareRequestToBackend(query.toString());
+			} else {
+				throw new RuntimeException("cannot drop multiple indexes ");
+			}
+
+		}
+	}
+
 	@Override
 	public void onContextMenu(FastWebTree tree, String action) {
 		List<WebTreeNode> selected = this.tree.getTree().getSelected();
@@ -522,7 +633,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 				nodes.add(data2);
 		}
 		if (SH.startsWith(action, "add")) {
-			AmiCenterManagerSmartGraphMenu.onMenuItem(service, action, nodes);
+			AmiCenterManagerSmartGraphMenu.onMenuItemAddAction(service, action);
 			return;
 		} else if ("edit_trigger".equals(action)) {
 			AmiCenterGraphNode n = nodes.get(0);
@@ -1041,5 +1152,9 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 	public void onCenterNodeRemoved(AmiCenterGraphNode node) {
 		onChanged();
 
+	}
+
+	public FastTreePortlet getFastTreePortlet() {
+		return this.tree;
 	}
 }

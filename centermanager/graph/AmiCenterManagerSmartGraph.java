@@ -433,7 +433,7 @@ public class AmiCenterManagerSmartGraph implements GraphListener, GraphContextMe
 		List<AmiCenterGraphNode> nodes = new ArrayList<AmiCenterGraphNode>(selected.size());
 		for (Node i : selected)
 			nodes.add((AmiCenterGraphNode) i.getData());
-		AmiCenterManagerSmartGraphMenu.onMenuItem(service, id, nodes);
+		AmiCenterManagerSmartGraphMenu.onMenuItemAddAction(service, id);
 		if (id.startsWith("edit")) {
 
 		}
