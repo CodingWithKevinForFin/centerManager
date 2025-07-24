@@ -22,7 +22,10 @@ import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Table;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Trigger;
 import com.f1.ami.web.centermanager.portlets.AmiWebCenterManagerPortlet;
 import com.f1.ami.web.graph.AmiWebGraphNode_Link;
+import com.f1.base.IterableAndSize;
 import com.f1.suite.web.menu.WebMenu;
+import com.f1.suite.web.menu.impl.BasicWebMenu;
+import com.f1.suite.web.menu.impl.BasicWebMenuLink;
 import com.f1.suite.web.portal.impl.WebMenuListener;
 import com.f1.suite.web.portal.impl.visual.GraphContextMenuFactory;
 import com.f1.suite.web.portal.impl.visual.GraphListener;
@@ -257,16 +260,18 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 		for (Set<AmiCenterGraphNode> groupNode : mergedGroupSets) {
 			//set once per groupNode
 			referenceDepthSet = false;
+			LongKeyMap<Integer> cache = new LongKeyMap<Integer>();
 			for (AmiCenterGraphNode i : groupNode) {
-				determineDepth(i, null, groupNode);
+				int depth = determineDepth(i, null, groupNode);
+				cache.put(i.getUid(), depth);
 				this.allNodes.put(i.getUid(), i);
 				this.remaining.add(i);
 
 			}
-
+			//normalize depth to 0-max
+			normalizeDepth(cache);
 		}
 
-		normalizeDepth();
 		Integer[] normalizedDepths = depths.getValues(new Integer[depths.size()]);
 		Integer maxDepth = Collections.max(Arrays.asList(normalizedDepths));
 		this.maxDepth = maxDepth;
@@ -284,8 +289,8 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 
 		//Start with tables
 		for (AmiCenterGraphNode_Table i : sort(tables)) {
-			if (i.getTargetIndexes().isEmpty() && i.getTargetTriggers().isEmpty())
-				continue;
+			//			if (i.getTargetIndexes().isEmpty() && i.getTargetTriggers().isEmpty())
+			//				continue;
 			Node node = addNode(0, i);
 			if (node == null)
 				continue;
@@ -456,13 +461,15 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 	}
 
 	//normalize depths to 0->max
-	private void normalizeDepth() {
-		Integer[] unnormalizedDepths = depths.getValues(new Integer[depths.size()]);
+	private void normalizeDepth(LongKeyMap<Integer> orig) {
+		Integer[] unnormalizedDepths = orig.getValues(new Integer[orig.size()]);
 		Integer minDepth = Collections.min(Arrays.asList(unnormalizedDepths));
 		Integer maxDepth = Collections.max(Arrays.asList(unnormalizedDepths));
 		int diff = 0 - minDepth;
+		if (diff == 0)
+			return;
 		//add to diff for each value, normalize_val = orig  + diff
-		for (Long key : depths.getKeys()) {
+		for (Long key : orig.getKeys()) {
 			depths.put(key, depths.get(key) + diff);
 		}
 	}
@@ -633,7 +640,17 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 
 	@Override
 	public void onMenuItem(String id) {
-		// TODO Auto-generated method stub
+		IterableAndSize<Node> selected = this.erGraph.getSelectedNodes();
+		List<AmiCenterGraphNode> nodes = new ArrayList<AmiCenterGraphNode>(selected.size());
+		for (Node i : selected)
+			nodes.add((AmiCenterGraphNode) i.getData());
+		if ("navigate".equals(id)) {
+			this.buildGraph(new IdentityHashSet<AmiCenterGraphNode>(nodes), new IdentityHashSet<AmiCenterGraphNode>(nodes));
+		} else if ("edit_table".equals(id)) {
+
+		} else if ("edit_trigger".equals(id)) {
+			System.out.println(2);
+		}
 
 	}
 
@@ -663,8 +680,24 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 
 	@Override
 	public void onUserClick(GraphPortlet graphPortlet, Node nodeOrNull, int button, boolean ctrl, boolean shft) {
-		// TODO Auto-generated method stub
-
+		if (button != 2)
+			return;
+		IterableAndSize<Node> nodes = getGraph().getSelectedNodes();
+		List<AmiCenterGraphNode> nodes2 = new ArrayList<AmiCenterGraphNode>(nodes.size());
+		if (nodes.size() >= 1)
+			CH.first(nodes).setSelected(true);
+		for (Node node : nodes) {
+			AmiCenterGraphNode n = (AmiCenterGraphNode) node.getData();
+			if (n == null)
+				return;
+			nodes2.add(n);
+		}
+		BasicWebMenu menu = AmiCenterManagerEntityRelationGraphMenu.createContextMenu(service, nodes2, this.allowModification);
+		if (nodes2.size() > 0) {
+			menu.addChild(new BasicWebMenuLink("Navigate To", true, "navigate"));
+		}
+		if (menu != null)
+			service.getPortletManager().showContextMenu(menu, this);
 	}
 
 	@Override
@@ -677,6 +710,10 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 	public void onKeyDown(String keyCode, String ctrl) {
 		// TODO Auto-generated method stub
 
+	}
+
+	public GraphPortlet getGraph() {
+		return this.erGraph;
 	}
 
 	public static class UnionFind {

@@ -40,6 +40,7 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 	//menu should contain tablenames(left and right), tablecolumn(left and right)
 	final private FormPortletTextField onField;
 	final private AmiCenterManagerTriggerEditor_JoinSelectEditor selectsEditor;
+	final private FormPortletTextField wheresField;
 
 	final private AmiWebService service;
 	private String leftTable;
@@ -133,6 +134,68 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 
 		selectsEditor = new AmiCenterManagerTriggerEditor_JoinSelectEditor(generateConfig(), this);
 
+		wheresField = form.addField(new FormPortletTextField("wheres"));
+		wheresField.setHasButton(true);
+		wheresField.setLeftPosPx(80).setWidth(500).setHeight(25).setTopPosPx(115);
+		wheresField.setHelp("");
+		wheresField.setCorrelationData(new Formula() {
+			@Override
+			public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
+				BasicWebMenu r = new BasicWebMenu();
+				AmiWebMenuUtils.createOperatorsMenu(r, AmiWebUtils.getService(getManager()), "");
+
+				//ADD TABLE NAMES AND COLUMNS
+				if (leftTable != null && rightTable != null && leftTableColumns != null && rightTableColumns != null) {
+					WebMenu tableNamesAndColumns = new BasicWebMenu("Table Names && Columns", true);
+
+					//TODO: better action than "conq_" for?(color no quotes)
+					WebMenu leftTableCols = new BasicWebMenu(leftTable + "&nbsp;&nbsp;&nbsp;<i>Left Table</i>", true);
+					for (String c : CH.sort(leftTableColumns, SH.COMPARATOR_CASEINSENSITIVE_STRING))
+						leftTableCols.add(new BasicWebMenuLink(c, true, "conq_" + leftTable + "." + c).setAutoclose(false).setCssStyle("_fm=courier"));
+
+					WebMenu rightTableCols = new BasicWebMenu(rightTable + "&nbsp;&nbsp;&nbsp;<i>Right Table</i>", true);
+					for (String c : CH.sort(rightTableColumns, SH.COMPARATOR_CASEINSENSITIVE_STRING))
+						rightTableCols.add(new BasicWebMenuLink(c, true, "conq_" + rightTable + "." + c).setAutoclose(false).setCssStyle("_fm=courier"));
+
+					tableNamesAndColumns.add(leftTableCols);
+					tableNamesAndColumns.add(rightTableCols);
+					r.add(tableNamesAndColumns);
+				}
+
+				////////////////////////////////////
+				if (leftTable != null && rightTable != null) {
+					//table names [left, right]
+					WebMenu tableNames = new BasicWebMenu("Table Names", true);
+					String leftTableHTML = leftTable + "&nbsp;&nbsp;&nbsp;<i>Left Table</i>";
+					String rightTableHTML = rightTable + "&nbsp;&nbsp;&nbsp;<i>Right Table</i>";
+					tableNames.add(new BasicWebMenuLink(leftTableHTML, true, "var_" + leftTable).setAutoclose(false).setCssStyle("_fm=courier"));
+					tableNames.add(new BasicWebMenuLink(rightTableHTML, true, "var_" + rightTable).setAutoclose(false).setCssStyle("_fm=courier"));
+					r.add(tableNames);
+				}
+				if (leftTableColumns != null) {
+					//table columns [leftColumn, rightColumn]
+					WebMenu leftColumns = new BasicWebMenu("Left Table Columns", true);
+					for (String c : CH.sort(leftTableColumns, SH.COMPARATOR_CASEINSENSITIVE_STRING))
+						leftColumns.add(new BasicWebMenuLink(c, true, "var_" + c).setAutoclose(false).setCssStyle("_fm=courier"));
+					r.add(leftColumns);
+				}
+				if (rightTableColumns != null) {
+					WebMenu rightColumns = new BasicWebMenu("Right Table Columns", true);
+					for (String c : CH.sort(rightTableColumns, SH.COMPARATOR_CASEINSENSITIVE_STRING))
+						rightColumns.add(new BasicWebMenuLink(c, true, "var_" + c).setAutoclose(false).setCssStyle("_fm=courier"));
+					r.add(rightColumns);
+				}
+
+				return r;
+			}
+
+			@Override
+			public void onContextMenu(FormPortletField field, String action) {
+				AmiWebMenuUtils.processContextMenuAction(AmiWebUtils.getService(getManager()), action, field);
+
+			}
+		});
+
 		this.form.addMenuListener(this);
 		this.form.setMenuFactory(this);
 		addChild(form, 0, 0, 1, 1);
@@ -214,6 +277,8 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 			return this.selectsEditor.getOutputField();
 		if ("on".equals(name))
 			return this.onField;
+		if ("wheres".equals(name))
+			return this.wheresField;
 		throw new NullPointerException("No such name:" + name);
 
 	}
@@ -221,6 +286,9 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 	@Override
 	public WebMenu createMenu(FormPortlet formPortlet, FormPortletField<?> field, int cursorPosition) {
 		if (field == this.onField) {
+			Formula f = (Formula) this.onField.getCorrelationData();
+			return f.createMenu(formPortlet, field, cursorPosition);
+		} else if (field == this.wheresField) {
 			Formula f = (Formula) this.onField.getCorrelationData();
 			return f.createMenu(formPortlet, field, cursorPosition);
 		}
@@ -231,6 +299,9 @@ public class AmiCenterManagerTriggerEditor_JoinTrigger extends AmiCenterManagerA
 	public void onContextMenu(FormPortlet portlet, String action, FormPortletField field) {
 		if (field == this.onField) {
 			Formula f = (Formula) this.onField.getCorrelationData();
+			f.onContextMenu(field, action);
+		} else if (field == this.wheresField) {
+			Formula f = (Formula) this.wheresField.getCorrelationData();
 			f.onContextMenu(field, action);
 		}
 	}
