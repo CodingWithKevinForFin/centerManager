@@ -29,6 +29,7 @@ import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.impl.DividerPortlet;
 import com.f1.suite.web.portal.impl.FastTreePortlet;
 import com.f1.suite.web.portal.impl.GridPortlet;
+import com.f1.suite.web.portal.impl.HtmlPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortlet;
 import com.f1.suite.web.portal.impl.form.FormPortletButton;
 import com.f1.suite.web.portal.impl.form.FormPortletContextMenuFactory;
@@ -52,6 +53,7 @@ public class AmiCenterManagerTriggerScirptTreePortlet extends GridPortlet implem
 	public static final int DEFAULT_LIMIT = 10000;
 	public static final int DEFAULT_TIMEOUT = 60000;
 	private long sessionId = -1;
+	private static final String BG_GREY = "_bg=#4c4c4c";
 
 	private LongKeyMap<List<WebTreeNode>> nodesByGraphId = new LongKeyMap<List<WebTreeNode>>();
 	final private AmiWebService service;
@@ -59,6 +61,9 @@ public class AmiCenterManagerTriggerScirptTreePortlet extends GridPortlet implem
 	final private FastTreePortlet tree;
 
 	//form
+	private GridPortlet triggerEditorGrid;
+	private InnerPortlet triggerEditorPanel;
+	final private HtmlPortlet blankPreview;
 	private AmiCenterManagerEditTriggerPortlet triggerEditor;
 
 	private WebTreeNode treeNodeTriggers;
@@ -66,9 +71,7 @@ public class AmiCenterManagerTriggerScirptTreePortlet extends GridPortlet implem
 	public AmiCenterManagerTriggerScirptTreePortlet(PortletConfig config, Map<String, AmiCenterGraphNode_Trigger> triggerBinding) {
 		super(config);
 		this.service = AmiWebUtils.getService(getManager());
-		this.divider = new DividerPortlet(generateConfig(), true);
-		this.divider.setOffsetFromTopPx(300);
-		this.addChild(divider);
+		this.blankPreview = new HtmlPortlet(generateConfig());
 
 		this.tree = new FastTreePortlet(generateConfig());
 		this.tree.getTree().setComparator(this);
@@ -79,13 +82,15 @@ public class AmiCenterManagerTriggerScirptTreePortlet extends GridPortlet implem
 		this.tree.getTree().setRootLevelVisible(false);
 		buildTree(triggerBinding);
 
-		//form
-		//	manager.showDialog("Edit Trigger", new AmiCenterManagerEditTriggerPortlet(manager.generateConfig(), triggerSql), 800, 850);
 		this.triggerEditor = new AmiCenterManagerEditTriggerPortlet(generateConfig(), true);
 		this.triggerEditor.enableEdit(false);
+		this.triggerEditorGrid = new GridPortlet(generateConfig());
+		this.triggerEditorPanel = this.triggerEditorGrid.addChild(blankPreview.setCssClass(BG_GREY), 0, 0, 2, 2);
 
-		this.divider.addChild(this.tree);
-		this.divider.addChild(this.triggerEditor);
+		this.divider = new DividerPortlet(generateConfig(), true, this.tree, this.triggerEditorGrid);
+		this.divider.setOffsetFromTopPx(300);
+		this.addChild(divider);
+
 		this.service.addCompilerListener(this);
 		this.service.getDomObjectsManager().addGlobalListener(this);
 
@@ -205,6 +210,9 @@ public class AmiCenterManagerTriggerScirptTreePortlet extends GridPortlet implem
 			Row r = t.getRow(0);
 			String triggerSql = Caster_String.INSTANCE.cast(r.get("SQL"));
 			this.triggerEditor = new AmiCenterManagerEditTriggerPortlet(generateConfig(), triggerSql);
+			this.getManager().onPortletAdded(this.triggerEditor);
+			this.triggerEditorPanel.setPortlet(this.triggerEditor);
+
 		}
 	}
 

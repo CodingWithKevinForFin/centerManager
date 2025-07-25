@@ -994,7 +994,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 							Map<String, AmiCenterGraphNode_Trigger> triggerBinding = this.tableNodeByNames.get(name).getTargetTriggers();
 							Map<String, AmiCenterGraphNode_Index> indexBinding = this.tableNodeByNames.get(name).getTargetIndexes();
 							manager.showDialog("Rich Table Editor", new AmiCenterManagerRichTableEditorPortlet(manager.generateConfig(), tableConfig, triggerBinding, indexBinding),
-									1350, 800);
+									1350, 1500);
 
 							break;
 						case "TRIGGER":

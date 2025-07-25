@@ -274,7 +274,11 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 		}
 
 		Integer[] normalizedDepths = depths.getValues(new Integer[depths.size()]);
-		Integer maxDepth = Collections.max(Arrays.asList(normalizedDepths));
+		Integer maxDepth = null;
+		if (normalizedDepths.length > 0)
+			maxDepth = Collections.max(Arrays.asList(normalizedDepths));
+		else
+			maxDepth = -1;
 		this.maxDepth = maxDepth;
 		minXPos = new int[maxDepth + 1];
 
