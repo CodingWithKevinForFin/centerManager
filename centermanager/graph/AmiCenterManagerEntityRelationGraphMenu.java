@@ -9,6 +9,7 @@ import com.f1.ami.web.centermanager.editor.AmiCenterManagerAddDboPortlet;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerAddIndexPortlet;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerAddTablePortlet;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Table;
 import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditMethodPortlet;
 import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditProcedurePortlet;
 import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditTimerPortlet;
@@ -41,6 +42,7 @@ public class AmiCenterManagerEntityRelationGraphMenu {
 					menu.addChild(new BasicWebMenuLink("Add Table", true, "add_table"));
 					menu.addChild(new BasicWebMenuLink("Edit Table", true, "edit_table"));
 					menu.addChild(new BasicWebMenuLink("Delete Table", true, "delete_table"));
+					menu.addChild(new BasicWebMenuLink("View Index", true, "view_index"));
 				}
 			} else if (AmiCenterGraphNode.TYPE_TRIGGER == type) {
 				if (allowModification) {
@@ -142,6 +144,13 @@ public class AmiCenterManagerEntityRelationGraphMenu {
 		} else if ("add_dbo".equals(id)) {
 			manager.showDialog("Add Dbo", new AmiCenterManagerAddDboPortlet(manager.generateConfig()), 500, 550);
 		}
+	}
+
+	public static void viewIndex(AmiCenterGraphNode_Table node, PortletManager manager) {
+
+		AmiCenterManagerViewIndexPortlet window = new AmiCenterManagerViewIndexPortlet(manager.generateConfig(), node);
+		manager.showDialog("View Index", window);
+
 	}
 
 	public static boolean isAllNodeTypeSame(List<AmiCenterGraphNode> selectedNodesList) {

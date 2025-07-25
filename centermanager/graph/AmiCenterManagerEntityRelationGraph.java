@@ -263,6 +263,8 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 			referenceDepthSet = false;
 			LongKeyMap<Integer> cache = new LongKeyMap<Integer>();
 			for (AmiCenterGraphNode i : groupNode) {
+				if (!(i instanceof AmiCenterGraphNode_Table || i instanceof AmiCenterGraphNode_Trigger))
+					continue;
 				int depth = determineDepth(i, null, groupNode);
 				cache.put(i.getUid(), depth);
 				this.allNodes.put(i.getUid(), i);
@@ -468,6 +470,8 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 	//normalize depths to 0->max
 	private void normalizeDepth(LongKeyMap<Integer> orig) {
 		Integer[] unnormalizedDepths = orig.getValues(new Integer[orig.size()]);
+		if (unnormalizedDepths.length == 0)
+			return;
 		Integer minDepth = Collections.min(Arrays.asList(unnormalizedDepths));
 		Integer maxDepth = Collections.max(Arrays.asList(unnormalizedDepths));
 		int diff = 0 - minDepth;
@@ -571,7 +575,8 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 
 					break;
 				default:
-					throw new IllegalArgumentException("only support building graphs for tables and triggers");
+					break;
+				//					throw new IllegalArgumentException("only support building graphs for tables and triggers");
 			}
 
 		}
@@ -665,6 +670,8 @@ public class AmiCenterManagerEntityRelationGraph implements GraphListener, Graph
 			owner.onContextMenuOnNodes(id, nodes);
 		} else if ("edit_dbo".equals(id)) {
 			owner.onContextMenuOnNodes(id, nodes);
+		} else if ("view_index".equals(id)) {
+			AmiCenterManagerEntityRelationGraphMenu.viewIndex((AmiCenterGraphNode_Table) nodes.get(0), service.getPortletManager());
 		}
 
 	}
