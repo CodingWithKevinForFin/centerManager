@@ -19,6 +19,7 @@ import com.f1.ami.web.AmiWebRealtimeObjectListener;
 import com.f1.ami.web.AmiWebRealtimeObjectManager;
 import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Center;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Dbo;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Index;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Method;
@@ -32,6 +33,7 @@ import com.f1.utils.LH;
 import com.f1.utils.OH;
 import com.f1.utils.OneToOne;
 import com.f1.utils.SH;
+import com.f1.utils.structs.MapInMap;
 import com.f1.utils.structs.Tuple2;
 
 public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, AmiWebRealtimeObjectListener {
@@ -41,7 +43,9 @@ public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, Ami
 	private AmiWebService service;
 	static private final OneToOne<String, String> DATATYPES2TYPES = new OneToOne<String, String>();
 	private static AmiWebCenterGraphListener[] EMPTY = new AmiWebCenterGraphListener[0];
+	private MapInMap<AmiCenterGraphNode_Center, String, AmiCenterGraphNode_Table> externalTableNodes = new MapInMap<AmiCenterGraphNode_Center, String, AmiCenterGraphNode_Table>();
 	private AmiWebCenterGraphListener listeners[] = EMPTY;
+	private Map<String, AmiCenterGraphNode_Center> centerNodes = new HashMap<String, AmiCenterGraphNode_Center>();
 	private Map<String, AmiCenterGraphNode_Table> tableNodes = new HashMap<String, AmiCenterGraphNode_Table>();
 	private Map<String, AmiCenterGraphNode_Dbo> dboNodes = new HashMap<String, AmiCenterGraphNode_Dbo>();
 	private Map<String, AmiCenterGraphNode_Index> indexNodes = new HashMap<String, AmiCenterGraphNode_Index>();
@@ -106,6 +110,9 @@ public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, Ami
 		}
 		AmiCenterGraphNode n = null;
 		switch (nodeType) {
+			case AmiConsts.TYPE_CENTER:
+				getOrCreateCenter(nodeName, (byte) correlationData, readonly);
+				break;
 			case AmiConsts.TYPE_TABLE:
 				getOrCreateTable(nodeName, readonly);
 				break;
@@ -161,6 +168,14 @@ public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, Ami
 
 	public AmiCenterGraphNode_Index getIndex(String nodeName) {
 		AmiCenterGraphNode_Index n = this.indexNodes.get(nodeName);
+		if (n == null) {
+			throw new NullPointerException();
+		}
+		return n;
+	}
+
+	public AmiCenterGraphNode_Center getCenter(String nodeName) {
+		AmiCenterGraphNode_Center n = this.centerNodes.get(nodeName);
 		if (n == null) {
 			throw new NullPointerException();
 		}
@@ -291,10 +306,28 @@ public class AmiWebCenterGraphManager implements AmiWebCenterEntityListener, Ami
 		return n;
 	}
 
+	private AmiCenterGraphNode_Center getOrCreateCenter(String nodeName, byte status, boolean readonly) {
+		AmiCenterGraphNode_Center n = this.centerNodes.get(nodeName);
+		if (n == null) {
+			this.centerNodes.put(nodeName, n = new AmiCenterGraphNode_Center(this, nextUid(), nodeName, status, readonly));
+			fireAdded(n);
+		}
+		return n;
+	}
+
 	private AmiCenterGraphNode_Table getOrCreateTable(String nodeName, boolean readonly) {
 		AmiCenterGraphNode_Table n = this.tableNodes.get(nodeName);
 		if (n == null) {
 			this.tableNodes.put(nodeName, n = new AmiCenterGraphNode_Table(this, nextUid(), nodeName, readonly));
+			fireAdded(n);
+		}
+		return n;
+	}
+
+	public AmiCenterGraphNode_Table getOrCreateTableFromExternalCenter(AmiCenterGraphNode_Center center, String nodeName, boolean readonly) {
+		AmiCenterGraphNode_Table n = this.externalTableNodes.getMulti(center, nodeName);
+		if (n == null) {
+			this.externalTableNodes.putMulti(center, nodeName, n = new AmiCenterGraphNode_Table(this, nextUid(), nodeName, readonly));
 			fireAdded(n);
 		}
 		return n;

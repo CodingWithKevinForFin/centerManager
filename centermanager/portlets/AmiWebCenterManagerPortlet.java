@@ -30,6 +30,7 @@ import com.f1.ami.web.centermanager.graph.AmiCenterManagerEntityRelationGraph;
 import com.f1.ami.web.centermanager.graph.AmiCenterManagerSmartGraph;
 import com.f1.ami.web.centermanager.graph.AmiCenterManagerSmartGraphMenu;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Center;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Dbo;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Index;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Method;
@@ -101,6 +102,8 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 	private AmiWebDmScriptTreePortlet scriptTree;
 	private TabPortlet tabPortlet;
 	private LongKeyMap<List<WebTreeNode>> nodesByGraphId = new LongKeyMap<List<WebTreeNode>>();
+	private WebTreeNode treeNodeCurCenter;
+	private WebTreeNode treeNodeCenters;
 	private WebTreeNode treeNodeTables;
 	private WebTreeNode treeNodeTriggers;
 	private WebTreeNode treeNodeTimers;
@@ -109,6 +112,8 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 	private WebTreeNode treeNodeIndexes;
 	private WebTreeNode treeNodeDBOs;
 	private byte permissions = AmiCenterQueryDsRequest.PERMISSIONS_FULL;
+	HashMap<String, WebTreeNode> externalCenterTreeNodesByName = new HashMap<String, WebTreeNode>();
+	public HashMap<String, AmiCenterGraphNode_Center> centerNodeByNames = new HashMap<String, AmiCenterGraphNode_Center>();
 	public HashMap<String, AmiCenterGraphNode_Trigger> triggerNodeByNames = new HashMap<String, AmiCenterGraphNode_Trigger>();
 	public HashMap<String, AmiCenterGraphNode_Table> tableNodeByNames = new HashMap<String, AmiCenterGraphNode_Table>();
 	public HashMap<String, AmiCenterGraphNode_Timer> timerNodeByNames = new HashMap<String, AmiCenterGraphNode_Timer>();
@@ -125,6 +130,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 	private boolean showUserDefinedOnlyObjects = false;
 
 	//DB obeject consts
+	public static final byte DB_CENTER = 0;
 	public static final byte DB_TABLE = 1;
 	public static final byte DB_TIMER = 2;
 	public static final byte DB_TRIGGER = 4;
@@ -132,11 +138,12 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 	public static final byte DB_DBO = 16;
 	public static final byte DB_METHOD = 32;
 	public static final byte DB_INDEX = 64;
-	public byte SHOW_ALL_DB_TYPES = DB_TABLE | DB_TIMER | DB_TRIGGER | DB_PROCEDURE | DB_DBO | DB_METHOD | DB_INDEX;
+	public byte SHOW_ALL_DB_TYPES = DB_CENTER | DB_TABLE | DB_TIMER | DB_TRIGGER | DB_PROCEDURE | DB_DBO | DB_METHOD | DB_INDEX;
 	public static LinkedHashSet<Byte> ALL_TYPES = new LinkedHashSet<Byte>();
 	public static final String AMI_DS_NAME = "AMI";
 
 	//DB String
+	public static final String ID_CENTER = "CENTERS";
 	public static final String ID_TABLE = "TABLES";
 	public static final String ID_TRIGGER = "TRIGGERS";
 	public static final String ID_TIMER = "TIMERS";
@@ -150,6 +157,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 	TreeStateCopier tsc = null;
 
 	static {
+		ALL_TYPES.add(DB_CENTER);
 		ALL_TYPES.add(DB_TABLE);
 		ALL_TYPES.add(DB_TRIGGER);
 		ALL_TYPES.add(DB_INDEX);
@@ -267,6 +275,9 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 
 	private StringBuilder initDbObjectNode(StringBuilder sb, byte type) {
 		switch (type) {
+			case DB_CENTER:
+				sb.append("SHOW ").append(ID_CENTER).append(';');
+				break;
 			case DB_TABLE:
 				sb.append("SHOW ").append(ID_TABLE).append(';');
 				break;
@@ -299,14 +310,15 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 		this.tree.clear();
 		this.nodesByGraphId.clear();
 		// initialize node collections
-		//TODO: Replace the icons 
-		this.treeNodeTables = createNode(this.tree.getRoot(), "Tables", AmiWebConsts.CENTER_GRAPH_NODE_TABLE, null);
-		this.treeNodeTriggers = createNode(this.tree.getRoot(), "Triggers", AmiWebConsts.CENTER_GRAPH_NODE_TRIGGER, null);
-		this.treeNodeTimers = createNode(this.tree.getRoot(), "Timers", AmiWebConsts.CENTER_GRAPH_NODE_TIMER, null);
-		this.treeNodeProcedures = createNode(this.tree.getRoot(), "Procedures", AmiWebConsts.CENTER_GRAPH_NODE_PROCEDURE, null);
-		this.treeNodeMethods = createNode(this.tree.getRoot(), "Methods", AmiWebConsts.CENTER_GRAPH_NODE_METHOD, null);
-		this.treeNodeIndexes = createNode(this.tree.getRoot(), "Indexes", AmiWebConsts.CENTER_GRAPH_NODE_INDEX, null);
-		this.treeNodeDBOs = createNode(this.tree.getRoot(), "DBOs", AmiWebConsts.CENTER_GRAPH_NODE_DBO, null);
+		this.treeNodeCenters = createNode(this.tree.getRoot(), "Centers", AmiWebConsts.CENTER_GRAPH_NODE_CENTER, null);
+		this.treeNodeCurCenter = createNode(treeNodeCenters, "Current Center", AmiWebConsts.CENTER_GRAPH_NODE_CENTER, null);
+		this.treeNodeTables = createNode(treeNodeCurCenter, "Tables", AmiWebConsts.CENTER_GRAPH_NODE_TABLE, null);
+		this.treeNodeTriggers = createNode(treeNodeCurCenter, "Triggers", AmiWebConsts.CENTER_GRAPH_NODE_TRIGGER, null);
+		this.treeNodeTimers = createNode(treeNodeCurCenter, "Timers", AmiWebConsts.CENTER_GRAPH_NODE_TIMER, null);
+		this.treeNodeProcedures = createNode(treeNodeCurCenter, "Procedures", AmiWebConsts.CENTER_GRAPH_NODE_PROCEDURE, null);
+		this.treeNodeMethods = createNode(treeNodeCurCenter, "Methods", AmiWebConsts.CENTER_GRAPH_NODE_METHOD, null);
+		this.treeNodeIndexes = createNode(treeNodeCurCenter, "Indexes", AmiWebConsts.CENTER_GRAPH_NODE_INDEX, null);
+		this.treeNodeDBOs = createNode(treeNodeCurCenter, "DBOs", AmiWebConsts.CENTER_GRAPH_NODE_DBO, null);
 
 		prepareDbObjectNode();
 
@@ -336,6 +348,8 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 
 	public static String getIcon(AmiCenterGraphNode node) {
 		switch (node.getType()) {
+			case AmiCenterGraphNode.TYPE_CENTER:
+				return AmiWebConsts.CENTER_GRAPH_NODE_CENTER;
 			case AmiCenterGraphNode.TYPE_TABLE:
 				return AmiWebConsts.CENTER_GRAPH_NODE_TABLE;
 			case AmiCenterGraphNode.TYPE_TRIGGER:
@@ -851,7 +865,39 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 					for (Table t : tables) {
 						String title = t.getTitle();
 						AmiWebCenterGraphManager gm = this.service.getCenterGraphManager();
+						if (title.startsWith("TABLES FROM")) {
+							String centerName = SH.afterFirst(title, "TABLES FROM ");
+							AmiCenterGraphNode_Center parent = gm.getCenter(centerName);
+							WebTreeNode parentNode = externalCenterTreeNodesByName.get(centerName);
+							WebTreeNode tableParentNode = createNode(parentNode, "Tables", AmiWebConsts.CENTER_GRAPH_NODE_TABLE, null);
+							for (Row r : t.getRows()) {
+								String tableName = (String) r.get("TableName");
+								boolean readonly = !((String) r.get("DefinedBy")).equals("USER");
+								AmiCenterGraphNode_Table tableNode = gm.getOrCreateTableFromExternalCenter(parent, tableName, readonly);
+								if (!readonly)
+									createNode(tableParentNode, tableNode);
+							}
+						}
 						switch (title) {
+							case ID_CENTER:
+								for (Row r : t.getRows()) {
+									String centerName = (String) r.get("CenterName");
+									String url = (String) r.get("Url");
+									String nodeName = centerName + "_" + url;
+									String status = (String) r.get("Status");
+									AmiCenterGraphNode_Center target = gm.getCenter(centerName);
+
+									this.centerNodeByNames.put(nodeName, target);
+									WebTreeNode node = createNode(this.treeNodeCenters, target);
+									externalCenterTreeNodesByName.put(centerName, node);
+									if ("NOT_CONNECTED".equals(status)) {
+										node.setName(nodeName + " (DISCONNECTED)");
+									} else {
+										node.setName(nodeName);
+										prepareRequestToBackend("SHOW TABLES FROM " + centerName);
+									}
+								}
+								break;
 							case ID_TABLE:
 								for (Row r : t.getRows()) {
 									String tableName = (String) r.get("TableName");

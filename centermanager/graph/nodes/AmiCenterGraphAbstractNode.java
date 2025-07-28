@@ -21,6 +21,10 @@ public class AmiCenterGraphAbstractNode implements AmiCenterGraphNode {
 		return this.label;
 	}
 
+	public void setLabel(String label) {
+		this.label = label;
+	}
+
 	@Override
 	public long getUid() {
 		return this.uid;
