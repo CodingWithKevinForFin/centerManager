@@ -7,6 +7,7 @@ import com.f1.ami.web.AmiWebService;
 import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Index;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Table;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Trigger;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.PortletManager;
@@ -19,14 +20,15 @@ public class AmiCenterManagerRichTableEditorPortlet extends GridPortlet {
 
 	final private AmiWebService service;
 	private AmiWebHeaderPortlet header;
+	private AmiCenterGraphNode_Table correlationNode;
 
 	private TabPortlet tableEditorTabsPortlet;//contains triggers,indexes,columns
 
 	public AmiCenterManagerRichTableEditorPortlet(PortletConfig config, Map<String, String> tableConfig, Map<String, AmiCenterGraphNode_Trigger> triggerBinding,
-			Map<String, AmiCenterGraphNode_Index> indexBinding) {
+			Map<String, AmiCenterGraphNode_Index> indexBinding, AmiCenterGraphNode_Table correlationNode) {
 		super(config);
 		this.service = AmiWebUtils.getService(getManager());
-
+		this.correlationNode = correlationNode;
 		this.header = new AmiWebHeaderPortlet(generateConfig());
 		this.header.updateBlurbPortletLayout("Rich Table Editor", null);
 		this.header.setShowSearch(false);
@@ -43,6 +45,10 @@ public class AmiCenterManagerRichTableEditorPortlet extends GridPortlet {
 		this.tableEditorTabsPortlet.setIsCustomizable(false);
 		this.addChild(this.tableEditorTabsPortlet, 0, 1, 1, 1);
 
+	}
+
+	public AmiCenterGraphNode_Table getCorrelationNode() {
+		return this.correlationNode;
 	}
 
 }

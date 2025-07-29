@@ -25,7 +25,6 @@ import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.AmiWebCenterGraphManager;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerAddMethodPortlet;
-import com.f1.ami.web.centermanager.editor.AmiCenterManagerRichTableEditorPortlet;
 import com.f1.ami.web.centermanager.graph.AmiCenterManagerEntityRelationGraph;
 import com.f1.ami.web.centermanager.graph.AmiCenterManagerSmartGraph;
 import com.f1.ami.web.centermanager.graph.AmiCenterManagerSmartGraphMenu;
@@ -38,9 +37,6 @@ import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Procedure;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Table;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Timer;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Trigger;
-import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditProcedurePortlet;
-import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditTimerPortlet;
-import com.f1.ami.web.centermanager.nuweditor.AmiCenterManagerEditTriggerPortlet;
 import com.f1.ami.web.dm.portlets.AmiWebDmScriptTreePortlet;
 import com.f1.ami.web.graph.AmiWebGraphListener;
 import com.f1.ami.web.graph.AmiWebGraphManager;
@@ -103,7 +99,6 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 	private TabPortlet tabPortlet;
 	private LongKeyMap<List<WebTreeNode>> nodesByGraphId = new LongKeyMap<List<WebTreeNode>>();
 	private WebTreeNode treeNodeCurCenter;
-	private WebTreeNode treeNodeCenters;
 	private WebTreeNode treeNodeTables;
 	private WebTreeNode treeNodeTriggers;
 	private WebTreeNode treeNodeTimers;
@@ -310,8 +305,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 		this.tree.clear();
 		this.nodesByGraphId.clear();
 		// initialize node collections
-		this.treeNodeCenters = createNode(this.tree.getRoot(), "Centers", AmiWebConsts.CENTER_GRAPH_NODE_CENTER, null);
-		this.treeNodeCurCenter = createNode(treeNodeCenters, "Current Center", AmiWebConsts.CENTER_GRAPH_NODE_CENTER, null);
+		this.treeNodeCurCenter = createNode(this.tree.getRoot(), "Current Center", AmiWebConsts.CENTER_GRAPH_NODE_CENTER, null);
 		this.treeNodeTables = createNode(treeNodeCurCenter, "Tables", AmiWebConsts.CENTER_GRAPH_NODE_TABLE, null);
 		this.treeNodeTriggers = createNode(treeNodeCurCenter, "Triggers", AmiWebConsts.CENTER_GRAPH_NODE_TRIGGER, null);
 		this.treeNodeTimers = createNode(treeNodeCurCenter, "Timers", AmiWebConsts.CENTER_GRAPH_NODE_TIMER, null);
@@ -478,7 +472,13 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 	public WebMenu createMenu(FastWebTree fastWebTree, List<WebTreeNode> selected) {
 		if (selected.size() == 1) {
 			WebTreeNode t = selected.get(0);
-			if (t == this.treeNodeTables && allowModification) {
+			if (t == this.treeNodeCurCenter || this.externalCenterTreeNodesByName.containsValue(t)) {
+				BasicWebMenu menu = new BasicWebMenu();
+				menu.addChild(new BasicWebMenuLink("Add Center", true, "add_center"));
+				if (this.externalCenterTreeNodesByName.containsValue(t))
+					menu.addChild(new BasicWebMenuLink("Remove Center", true, "delete_center"));
+				return menu;
+			} else if (t == this.treeNodeTables && allowModification) {
 				BasicWebMenu menu = new BasicWebMenu();
 				menu.addChild(new BasicWebMenuLink("Add Table", true, "add_table"));
 				return menu;
@@ -633,6 +633,8 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 			} else {
 				throw new RuntimeException("cannot drop multiple indexes ");
 			}
+
+		} else if ("add_center".equals(action)) {
 
 		}
 	}
@@ -874,8 +876,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 								String tableName = (String) r.get("TableName");
 								boolean readonly = !((String) r.get("DefinedBy")).equals("USER");
 								AmiCenterGraphNode_Table tableNode = gm.getOrCreateTableFromExternalCenter(parent, tableName, readonly);
-								if (!readonly)
-									createNode(tableParentNode, tableNode);
+								createNode(tableParentNode, tableNode);
 							}
 						}
 						switch (title) {
@@ -888,7 +889,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 									AmiCenterGraphNode_Center target = gm.getCenter(centerName);
 
 									this.centerNodeByNames.put(nodeName, target);
-									WebTreeNode node = createNode(this.treeNodeCenters, target);
+									WebTreeNode node = createNode(this.tree.getRoot(), target);
 									externalCenterTreeNodesByName.put(centerName, node);
 									if ("NOT_CONNECTED".equals(status)) {
 										node.setName(nodeName + " (DISCONNECTED)");
@@ -1020,6 +1021,7 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 					//describe [entity] [entity_name]
 					String temp = SH.afterFirst(query, " ");
 					String target = SH.beforeFirst(temp, " ");
+					String name = SH.afterFirst(temp, " ");
 					Table t = tables.get(0);
 					Row r = t.getRow(0);
 					PortletManager manager = service.getPortletManager();
@@ -1036,25 +1038,33 @@ public class AmiWebCenterManagerPortlet extends GridPortlet implements AmiWebGra
 							CreateTableNode ctn = AmiCenterManagerUtils.scriptToCreateTableNode(createTableScript);
 							Map<String, String> tableConfig = AmiCenterManagerUtils.parseAdminNode_Table(ctn);
 							//manager.showDialog("Edit Table", new AmiCenterManagerAddTablePortlet(manager.generateConfig(), tableConfig, AmiCenterEntityTypeConsts.EDIT), 500, 550);
-							String name = SH.afterFirst(temp, "TABLE ");
 							Map<String, AmiCenterGraphNode_Trigger> triggerBinding = this.tableNodeByNames.get(name).getTargetTriggers();
 							Map<String, AmiCenterGraphNode_Index> indexBinding = this.tableNodeByNames.get(name).getTargetIndexes();
-							manager.showDialog("Rich Table Editor", new AmiCenterManagerRichTableEditorPortlet(manager.generateConfig(), tableConfig, triggerBinding, indexBinding),
-									1350, 1500);
+							AmiCenterGraphNode_Table correlationNodeTable = tableNodeByNames.get(name);
+							this.service.getAmiCenterManagerEditorsManager().showEditTablePortlet(tableConfig, triggerBinding, indexBinding, correlationNodeTable);
+							//							manager.showDialog("Rich Table Editor",
+							//									new AmiCenterManagerRichTableEditorPortlet(manager.generateConfig(), tableConfig, triggerBinding, indexBinding, correlationNodeTable), 1350,
+							//									1500);
 
 							break;
 						case "TRIGGER":
 							String triggerSql = Caster_String.INSTANCE.cast(r.get("SQL"));
-							manager.showDialog("Edit Trigger", new AmiCenterManagerEditTriggerPortlet(manager.generateConfig(), triggerSql), 800, 850);
+							AmiCenterGraphNode_Trigger correlationNodeTrigger = triggerNodeByNames.get(name);
+							this.service.getAmiCenterManagerEditorsManager().showEditCenterObjectPortlet(triggerSql, correlationNodeTrigger);
+							//manager.showDialog("Edit Trigger", new AmiCenterManagerEditTriggerPortlet(manager.generateConfig(), triggerSql, correlationNode), 800, 850);
 							break;
 						case "TIMER":
 							String timerSql = Caster_String.INSTANCE.cast(r.get("SQL"));
 							timerSql = SH.beforeFirst(timerSql, "DISABLE TIMER");
-							manager.showDialog("Edit Timer", new AmiCenterManagerEditTimerPortlet(manager.generateConfig(), timerSql), 800, 850);
+							AmiCenterGraphNode_Timer correlationNodeTimer = timerNodeByNames.get(name);
+							this.service.getAmiCenterManagerEditorsManager().showEditCenterObjectPortlet(timerSql, correlationNodeTimer);
+							//manager.showDialog("Edit Timer", new AmiCenterManagerEditTimerPortlet(manager.generateConfig(), timerSql), 800, 850);
 							break;
 						case "PROCEDURE":
 							String procedureSql = Caster_String.INSTANCE.cast(r.get("SQL"));
-							manager.showDialog("Edit Procedure", new AmiCenterManagerEditProcedurePortlet(manager.generateConfig(), procedureSql), 800, 850);
+							AmiCenterGraphNode_Procedure correlationNodeProcedure = procedureNodeByNames.get(name);
+							this.service.getAmiCenterManagerEditorsManager().showEditCenterObjectPortlet(procedureSql, correlationNodeProcedure);
+							//manager.showDialog("Edit Procedure", new AmiCenterManagerEditProcedurePortlet(manager.generateConfig(), procedureSql), 800, 850);
 							break;
 						case "METHOD":
 							String methodScript = Caster_String.INSTANCE.cast(r.get("SQL"));

@@ -18,6 +18,7 @@ import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Trigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerAbstractTriggerEditor;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AggregateTrigger;
 import com.f1.ami.web.centermanager.nuweditor.triggerEditors.AmiCenterManagerTriggerEditor_AmiscirptTrigger;
@@ -154,8 +155,9 @@ public class AmiCenterManagerEditTriggerPortlet extends AmiCenterManagerAbstract
 		this.form.addFormPortletListener(this);
 	}
 
-	public AmiCenterManagerEditTriggerPortlet(PortletConfig config, String triggerSql) {
+	public AmiCenterManagerEditTriggerPortlet(PortletConfig config, String triggerSql, AmiCenterGraphNode_Trigger correlationNode) {
 		this(config, false);
+		this.correlationNode = correlationNode;
 		//never allow editing trigger type
 		this.triggerTypeField.setDisabled(true);
 		this.importFromText(triggerSql, new StringBuilder());

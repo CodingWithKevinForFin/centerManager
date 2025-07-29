@@ -17,6 +17,7 @@ import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.autocomplete.AmiCenterManagerFormPortletAmiScriptField;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Timer;
 import com.f1.base.Action;
 import com.f1.base.Row;
 import com.f1.base.Table;
@@ -222,8 +223,9 @@ public class AmiCenterManagerEditTimerPortlet extends AmiCenterManagerAbstractEd
 		sendQueryToBackend("SHOW METHODS WHERE DefinedBy==\"USER\"");
 	}
 
-	public AmiCenterManagerEditTimerPortlet(PortletConfig config, String sql) {
+	public AmiCenterManagerEditTimerPortlet(PortletConfig config, String sql, AmiCenterGraphNode_Timer correlationNode) {
 		this(config, false);
+		this.correlationNode = correlationNode;
 		//never allow editing trigger type
 		this.timerTypeField.setDisabled(true);
 		this.importFromText(sql, new StringBuilder());

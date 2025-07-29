@@ -15,6 +15,7 @@ import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Procedure;
 import com.f1.base.Action;
 import com.f1.base.Row;
 import com.f1.base.Table;
@@ -160,8 +161,9 @@ public class AmiCenterManagerEditProcedurePortlet extends AmiCenterManagerAbstra
 		registerProcedures();
 	}
 
-	public AmiCenterManagerEditProcedurePortlet(PortletConfig config, String sql) {
+	public AmiCenterManagerEditProcedurePortlet(PortletConfig config, String sql, AmiCenterGraphNode_Procedure correlationNode) {
 		this(config, false);
+		this.correlationNode = correlationNode;
 		//never allow editing 
 		this.typeField.setDisabled(true);
 		this.importFromText(sql, new StringBuilder());

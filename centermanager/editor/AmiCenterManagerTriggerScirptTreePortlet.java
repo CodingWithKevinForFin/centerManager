@@ -2,6 +2,7 @@ package com.f1.ami.web.centermanager.editor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -59,6 +60,7 @@ public class AmiCenterManagerTriggerScirptTreePortlet extends GridPortlet implem
 	final private AmiWebService service;
 	final private DividerPortlet divider;
 	final private FastTreePortlet tree;
+	public HashMap<String, AmiCenterGraphNode_Trigger> triggerNodeByNames = new HashMap<String, AmiCenterGraphNode_Trigger>();
 
 	//form
 	private GridPortlet triggerEditorGrid;
@@ -111,6 +113,7 @@ public class AmiCenterManagerTriggerScirptTreePortlet extends GridPortlet implem
 		for (Entry<String, AmiCenterGraphNode_Trigger> e : triggerBinding.entrySet()) {
 			String triggerName = e.getKey();
 			AmiCenterGraphNode_Trigger trigger = e.getValue();
+			triggerNodeByNames.put(triggerName, trigger);
 			createNode(this.treeNodeTriggers, trigger);
 		}
 	}
@@ -209,7 +212,9 @@ public class AmiCenterManagerTriggerScirptTreePortlet extends GridPortlet implem
 			Table t = response.getTables().get(0);
 			Row r = t.getRow(0);
 			String triggerSql = Caster_String.INSTANCE.cast(r.get("SQL"));
-			this.triggerEditor = new AmiCenterManagerEditTriggerPortlet(generateConfig(), triggerSql);
+			String name = SH.beforeFirst(SH.afterFirst(triggerSql, "CREATE TRIGGER "), " ");
+			AmiCenterGraphNode_Trigger correlationNode = triggerNodeByNames.get(name);
+			this.triggerEditor = new AmiCenterManagerEditTriggerPortlet(generateConfig(), triggerSql, correlationNode);
 			this.getManager().onPortletAdded(this.triggerEditor);
 			this.triggerEditorPanel.setPortlet(this.triggerEditor);
 

@@ -11,6 +11,7 @@ import com.f1.ami.web.AmiWebUtils;
 import com.f1.ami.web.centermanager.AmiCenterEntityConsts;
 import com.f1.ami.web.centermanager.AmiCenterManagerUtils;
 import com.f1.ami.web.centermanager.editor.AmiCenterManagerSubmitEditScriptPortlet;
+import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode;
 import com.f1.base.Action;
 import com.f1.container.ResultMessage;
 import com.f1.suite.web.portal.PortletConfig;
@@ -63,6 +64,7 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 
 	//buttons
 	final protected FormPortlet buttonsFp;
+	protected AmiCenterGraphNode correlationNode;
 	protected final FormPortletButton submitButton;
 	protected final FormPortletButton cancelButton;
 	protected final FormPortletButton resetButton;
@@ -125,6 +127,10 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		} else if (button == this.resetButton) {
 			revertEdit();
 		}
+	}
+
+	public AmiCenterGraphNode getCorrelationNode() {
+		return this.correlationNode;
 	}
 
 	protected void revertEdit() {
