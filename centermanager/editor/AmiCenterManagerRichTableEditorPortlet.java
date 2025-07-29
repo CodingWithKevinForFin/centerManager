@@ -51,4 +51,9 @@ public class AmiCenterManagerRichTableEditorPortlet extends GridPortlet {
 		return this.correlationNode;
 	}
 
+	@Override
+	public void close() {
+		super.close();
+		this.service.getAmiCenterManagerEditorsManager().onPortletClosed(this);
+	}
 }

@@ -1,6 +1,7 @@
 package com.f1.ami.web.centermanager.nuweditor;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -12,6 +13,7 @@ import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Procedure;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Table;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Timer;
 import com.f1.ami.web.centermanager.graph.nodes.AmiCenterGraphNode_Trigger;
+import com.f1.suite.web.portal.Portlet;
 import com.f1.suite.web.portal.PortletConfig;
 import com.f1.suite.web.portal.PortletHelper;
 import com.f1.suite.web.portal.impl.DesktopPortlet.Window;
@@ -31,16 +33,18 @@ public class AmiCenterManagerEditorsManager {
 		return this.service.getPortletManager().generateConfig();
 	}
 
-	public AmiCenterManagerAbstractEditCenterObjectPortlet getEditorByPortletId(String id) {
+	public Portlet getEditorByPortletId(String id) {
 		return this.editorsByPortletId.get(id);
 	}
 
 	public int getEditorsCount() {
-		return this.editorsByPortletId.size();
+		return this.editorsByPortletId.size() + tableEditorsByPortletId.size();
 	}
 
 	public Set<String> getEditorsPortletIds() {
-		return this.editorsByPortletId.keySet();
+		Set<String> editorsIds = new HashSet<>(this.editorsByPortletId.keySet());
+		editorsIds.addAll(this.tableEditorsByPortletId.keySet());
+		return editorsIds;
 	}
 
 	public AmiCenterManagerRichTableEditorPortlet showEditTablePortlet(Map<String, String> tableConfig, Map<String, AmiCenterGraphNode_Trigger> triggerBinding,
@@ -70,21 +74,25 @@ public class AmiCenterManagerEditorsManager {
 			}
 		}
 		AmiCenterManagerAbstractEditCenterObjectPortlet editor = null;
+		String target = null;
 		switch (node.getType()) {
 			case AmiCenterGraphNode_Trigger.CODE:
 				editor = new AmiCenterManagerEditTriggerPortlet(generateConfig(), sql, (AmiCenterGraphNode_Trigger) node);
+				target = "Trigger";
 				break;
 			case AmiCenterGraphNode_Timer.CODE:
 				editor = new AmiCenterManagerEditTimerPortlet(generateConfig(), sql, (AmiCenterGraphNode_Timer) node);
+				target = "Timer";
 				break;
 			case AmiCenterGraphNode_Procedure.CODE:
 				editor = new AmiCenterManagerEditProcedurePortlet(generateConfig(), sql, (AmiCenterGraphNode_Procedure) node);
+				target = "Procedure";
 				break;
 			default:
 				throw new NullPointerException();
 		}
 		String portletId = editor.getPortletId();
-		Window w = this.service.getDesktop().getDesktop().addChild("Edit Object", editor);
+		Window w = this.service.getDesktop().getDesktop().addChild("Edit " + target, editor);
 
 		this.service.getDesktop().applyEditModeStyle(w, 800, 850);
 		this.service.getPortletManager().onPortletAdded(editor);
@@ -116,10 +124,29 @@ public class AmiCenterManagerEditorsManager {
 		this.service.getDesktop().applyEditModeStyle(w, 800, 850);
 		this.service.getPortletManager().onPortletAdded(editor);
 
-		//The below is not needed, there is no need to add it to dmWizards, because users can't edit a dm that hasn't been added
 		String portletId = editor.getPortletId();
 		this.editorsByPortletId.put(portletId, editor);
 		return editor;
+	}
+
+	public void onPortletClosed(AmiCenterManagerAbstractEditCenterObjectPortlet oldPortlet) {
+		this.removeEditor(oldPortlet);
+	}
+
+	public void onPortletClosed(AmiCenterManagerRichTableEditorPortlet oldPortlet) {
+		this.removeTableEditor(oldPortlet);
+	}
+
+	private void removeEditor(AmiCenterManagerAbstractEditCenterObjectPortlet wiz) {
+		String portletId = wiz.getPortletId();
+		if (this.editorsByPortletId.containsKey(portletId))
+			this.editorsByPortletId.remove(portletId);
+	}
+
+	private void removeTableEditor(AmiCenterManagerRichTableEditorPortlet wiz) {
+		String portletId = wiz.getPortletId();
+		if (this.tableEditorsByPortletId.containsKey(portletId))
+			this.tableEditorsByPortletId.remove(portletId);
 	}
 
 }

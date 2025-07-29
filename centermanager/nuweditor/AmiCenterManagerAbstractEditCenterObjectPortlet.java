@@ -184,6 +184,12 @@ public abstract class AmiCenterManagerAbstractEditCenterObjectPortlet extends Gr
 		}
 	}
 
+	@Override
+	public void close() {
+		super.close();
+		this.service.getAmiCenterManagerEditorsManager().onPortletClosed(this);
+	}
+
 	public AmiCenterQueryDsRequest prepareRequest() {
 		AmiCenterQueryDsRequest request = getManager().getTools().nw(AmiCenterQueryDsRequest.class);
 
